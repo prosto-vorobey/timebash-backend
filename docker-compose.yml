@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: timebash-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: timebash
+      POSTGRES_USER: ${DB_USER:-DefaultUser}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-DefaultPassword123}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C.UTF-8"
+      PGDATA: /var/lib/postgresql/18/docker
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+  seq:
+    image: datalust/seq:2025.2
+    container_name: timebash-seq
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: Y
+      SEQ_PASSWORD: ${SEQ_PASSWORD:-DefaultPassword123}
+    ports:
+      - "5341:80"
+    volumes:
+      - seq_data:/data
+
+
+volumes:
+  postgres_data:
+  seq_data:

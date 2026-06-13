@@ -1,0 +1,64 @@
+## .NET ##
+bin/
+obj/
+*.exe
+*.dll
+*.pdb
+*.xml
+*.cache
+*.config
+*.log
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.pidb
+*.ide/
+.vs/
+
+## VS Code ##
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+## C# Dev Kit ##
+*.csproj.lscache
+
+## Docker (локальные файлы в папке проекта) ##
+docker-compose.*.yml
+.env
+.dockerignore
+docker-compose.override.yml
+
+## Секреты и конфигурации ##
+appsettings.Development.json
+appsettings.Production.json
+secrets.json
+*.user.config
+*.pubxml
+
+## Тесты ##
+TestResults/
+coveragereport/
+*.trx
+*.coverage
+.coverage
+
+## Временные файлы ##
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*.swo
+
+## IDE ##
+.idea/
+*.sublime-*
+*.code-workspace
+
+## ОС ##
+.DS_Store
+Thumbs.db

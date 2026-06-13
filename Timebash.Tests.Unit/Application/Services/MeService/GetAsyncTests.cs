@@ -1,0 +1,33 @@
+using FluentAssertions;
+using Moq;
+using Timebash.Application.Extensions;
+using Timebash.Core.Entities;
+using Timebash.Core.Exceptions;
+
+namespace Timebash.Tests.Unit.Application.Services.MeService;
+
+public class GetAsyncTests : MeServiceTestsBase
+{
+    [Fact]
+    public async Task Get_ValidAccess_ShouldReturnResponse()
+    {
+        var user = new User(Guid.NewGuid(), Faker.Internet.UserName(), Faker.Internet.Email());
+        var expected = user.ToResponse();
+
+        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(user.Id)).ReturnsAsync(user);
+
+        var result = await Service.GetAsync(user.Id);
+        result.Should().BeEquivalentTo(expected);
+    }
+
+    [Fact]
+    public async Task Get_UserNotFound_ShouldThrowNotFound()
+    {
+        var id = Guid.NewGuid();
+        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync((User?)null);
+
+        await FluentActions
+            .Invoking(() => Service.GetAsync(id))
+            .Should().ThrowAsync<NotFoundException>();
+    }
+}

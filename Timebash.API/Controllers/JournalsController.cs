@@ -34,8 +34,14 @@ public class JournalsController(ICurrentUserService currentUserService, IJournal
     /// Returns all activities that belong to the specified journal.
     /// </summary>
     /// <param name="id">The journal ID.</param>
-    /// <param name="date">The date to filter activities (UTC). If not set, all activities are returned.</param>
-    /// <param name="offsetMinutes">Optional timezone offset in minutes to adjust the requested date.</param>
+    /// <param name="date">
+    /// Optional date (UTC) to filter activities. If <c>null</c>, all activities are returned.
+    /// If provided, only activities that occurred on that specific day (in the timezone specified by <paramref name="offsetMinutes"/>) are included.
+    /// </param>
+    /// <param name="offsetMinutes">
+    /// Optional timezone offset in minutes. If <c>null</c>, UTC (0) is used.
+    /// This offset is applied to <paramref name="date"/> to determine the start and end of the day in the user's local time.
+    /// </param>
     /// <returns>A collection of activities linked to the journal.</returns>
     /// <response code="200">Activities were successfully retrieved.</response>
     /// <response code="400">The provided ID or time is invalid.</response>

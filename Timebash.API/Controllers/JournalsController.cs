@@ -54,7 +54,7 @@ public class JournalsController(ICurrentUserService currentUserService, IJournal
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ActivitiesListResponse>> GetActivitiesByJournalId(Guid id,
         [FromQuery] DateTime? date = null, [FromQuery] int? offsetMinutes = null)
-        => Ok(await _journalService.GetActivitiesByJournalIdAsync(id, _currentUserService.GetCurrentUserId(), date, offsetMinutes));
+        => Ok(await _journalService.GetActivitiesByJournalIdAsync(id, date, offsetMinutes, _currentUserService.GetCurrentUserId()));
 
     /// <summary>
     /// Creates a new journal.

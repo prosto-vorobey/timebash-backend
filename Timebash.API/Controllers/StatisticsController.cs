@@ -28,7 +28,7 @@ public class StatisticsController(ICurrentUserService currentUserService, IStati
     /// <response code="500">Internal server error. Check logs for details.</response>
     [HttpGet("me/aggregate")]
     [ProducesResponseType(typeof(UserAggregateStatisticResponse), StatusCodes.Status200OK)]
-    public async Task<ActionResult<UserAggregateStatisticResponse>> GetUserAggregateStatistic(DateTime? startTime, DateTime? endTime)
+    public async Task<ActionResult<UserAggregateStatisticResponse>> GetUserAggregateStatistic(DateTime? startTime = null, DateTime? endTime = null)
         => Ok(await _statisticService.GetUserAggregateStatisticAsync(_currentUserService.GetCurrentUserId(), startTime, endTime));
 
     /// <summary>
@@ -45,7 +45,7 @@ public class StatisticsController(ICurrentUserService currentUserService, IStati
     /// <response code="500">Internal server error. Check logs for details.</response>
     [HttpGet("journal/{id:guid}")]
     [ProducesResponseType(typeof(JournalStatisticResponse), StatusCodes.Status200OK)]
-    public async Task<ActionResult<JournalStatisticResponse>> GetJournalStatistic(Guid id, DateTime? startTime, DateTime? endTime)
+    public async Task<ActionResult<JournalStatisticResponse>> GetJournalStatistic(Guid id, DateTime? startTime = null, DateTime? endTime = null)
         => Ok(await _statisticService.GetJournalStatisticAsync(id, startTime, endTime, _currentUserService.GetCurrentUserId()));
     
     /// <summary>
@@ -62,6 +62,6 @@ public class StatisticsController(ICurrentUserService currentUserService, IStati
     /// <response code="500">Internal server error. Check logs for details.</response>
     [HttpGet("category/{id:guid}")]
     [ProducesResponseType(typeof(CategoryStatisticResponse), StatusCodes.Status200OK)]
-    public async Task<ActionResult<CategoryStatisticResponse>> GetCategoryStatistic(Guid id, DateTime? startTime, DateTime? endTime)
+    public async Task<ActionResult<CategoryStatisticResponse>> GetCategoryStatistic(Guid id, DateTime? startTime = null, DateTime? endTime = null)
         =>  Ok(await _statisticService.GetCategoryStatisticAsync(id, startTime, endTime, _currentUserService.GetCurrentUserId()));
 }

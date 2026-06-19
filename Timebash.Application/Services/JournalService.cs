@@ -26,11 +26,7 @@ public class JournalService(
     public async Task<JournalResponse> GetByIdAsync(Guid id, Guid userId)
         => (await EntityAccessGuard.EnsureJournalAccessAsync(_journalRepository, id, userId)).ToResponse();
 
-    public async Task<ActivitiesListResponse> GetActivitiesByJournalIdAsync(
-        Guid id,
-        Guid userId,
-        DateTime? date = null, 
-        int? offsetMinutes = null)
+    public async Task<ActivitiesListResponse> GetActivitiesByJournalIdAsync(Guid id, DateTime? date, int? offsetMinutes, Guid userId)
     {
         await EntityAccessGuard.EnsureJournalAccessAsync(_journalRepository, id, userId);
         var activities = date is null

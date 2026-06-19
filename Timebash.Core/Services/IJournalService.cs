@@ -23,7 +23,6 @@ public interface IJournalService
     /// Returns activities for a journal, optionally filtered by date.
     /// </summary>
     /// <param name="id">The journal ID.</param>
-    /// <param name="userId">The owner user ID.</param>
     /// <param name="date">
     /// Optional date (UTC) to filter activities. If <c>null</c>, all activities are returned.
     /// If provided, only activities that occurred on that specific day (in the timezone specified by <paramref name="offsetMinutes"/>) are included.
@@ -32,10 +31,11 @@ public interface IJournalService
     /// Optional timezone offset in minutes. If <c>null</c>, UTC (0) is used.
     /// This offset is applied to <paramref name="date"/> to determine the start and end of the day in the user's local time.
     /// </param>
+    /// <param name="userId">The owner user ID.</param>
     /// <returns>A collection of activities ordered by start time.</returns>
     /// <exception cref="BadRequestException">Thrown when <paramref name="id"/> is empty.</exception>
     /// <exception cref="NotFoundException">Thrown when the journal does not exist or does not belong to the user.</exception>
-    Task<ActivitiesListResponse> GetActivitiesByJournalIdAsync(Guid id, Guid userId, DateTime? date = null, int? offsetMinutes = null);
+    Task<ActivitiesListResponse> GetActivitiesByJournalIdAsync(Guid id, DateTime? date, int? offsetMinutes, Guid userId);
 
     /// <summary>
     /// Creates a new journal.

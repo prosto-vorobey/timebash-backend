@@ -19,7 +19,7 @@ public static class InfrastructureConfiguration
         services.AddScoped<IJournalRepository, PostgresJournalRepository>();
         services.AddScoped<IUserRepository, PostgresUserRepository>();
         services.AddScoped<IUserSettingsRepository, PostgresUserSettingsRepository>();
-        services.AddScoped<IStatisticsQueryService, PostgresStatisticsQueryService>();
+        services.AddScoped<IActivityQueryService, PostgresActivityQueryService>();
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<TimebashDbContext>());
 
         return services;

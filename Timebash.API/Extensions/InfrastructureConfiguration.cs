@@ -3,6 +3,7 @@ using Timebash.Core.Contracts;
 using Timebash.Core.Repositories;
 using Timebash.Infrastructure;
 using Timebash.Infrastructure.Repositories;
+using Timebash.Infrastructure.Services;
 
 namespace Timebash.API.Extensions;
 
@@ -18,6 +19,7 @@ public static class InfrastructureConfiguration
         services.AddScoped<IJournalRepository, PostgresJournalRepository>();
         services.AddScoped<IUserRepository, PostgresUserRepository>();
         services.AddScoped<IUserSettingsRepository, PostgresUserSettingsRepository>();
+        services.AddScoped<IStatisticsQueryService, PostgresStatisticsQueryService>();
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<TimebashDbContext>());
 
         return services;

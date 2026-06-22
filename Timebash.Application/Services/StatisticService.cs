@@ -43,15 +43,7 @@ public class StatisticService(
         long totalTime = 0;
         await foreach (var activity in _queryService.GetActivitiesForCategoryAsync(categoryId, start, end))
         {
-            var currentStart = activity.StartTime;
-            var currentEnd = activity.EndTime;
-
-            if (start.HasValue && currentStart < start.Value) currentStart = start.Value;
-            if (end.HasValue && currentEnd > end.Value) currentEnd = end.Value;
-
-            if (currentStart >= currentEnd) continue;
-
-            totalTime += (long)(currentEnd - currentStart).TotalSeconds;
+            totalTime += GetIntersectingTimeSeconds(activity, start, end);
         }
 
         return new CategoryStatisticResponse(totalTime);
@@ -69,14 +61,9 @@ public class StatisticService(
     
         await foreach (var activity in activities)
         {
-            var currentStart = activity.StartTime;
-            var currentEnd = activity.EndTime;
+            var time = GetIntersectingTimeSeconds(activity, start, end);
+            if (time == 0L) continue;
 
-            if (start.HasValue && currentStart < start.Value) currentStart = start.Value;
-            if (end.HasValue && currentEnd > end.Value) currentEnd = end.Value;
-            if (currentStart >= currentEnd) continue;
-
-            var time = (long)(currentEnd - currentStart).TotalSeconds;
             totalTime += time;
 
             if (activity.ActivityCategories.Count == 0)
@@ -100,5 +87,18 @@ public class StatisticService(
             .ToList();
 
         return (totalTime, statItems);
+    }
+
+    private static long GetIntersectingTimeSeconds(Activity activity, DateTime? start, DateTime? end)
+    {
+        var currentStart = activity.StartTime;
+        var currentEnd = activity.EndTime;
+
+        if (start.HasValue && currentStart < start.Value) currentStart = start.Value;
+        if (end.HasValue && currentEnd > end.Value) currentEnd = end.Value;
+
+        if (currentStart >= currentEnd) return 0L;
+
+        return (long)(currentEnd - currentStart).TotalSeconds;
     }
 }

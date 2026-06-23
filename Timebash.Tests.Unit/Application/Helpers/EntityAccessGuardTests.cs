@@ -11,9 +11,40 @@ namespace Timebash.Tests.Unit.Application.Helpers;
 public class EntityAccessGuardTests
 {
     private static readonly Faker _faker = new();
+    private readonly Mock<IUserRepository> _userRepositoryMock = new();
     private readonly Mock<IJournalRepository> _journalRepositoryMock = new();
     private readonly Mock<ICategoryRepository> _categoryRepositoryMock = new();
     private readonly Mock<IActivityRepository> _activityRepositoryMock = new();
+
+    [Fact]
+    public async Task EnsureUserAccess_ValidAccess_ShouldReturnUser()
+    {
+        var user = new User(Guid.NewGuid(), _faker.Internet.UserName(), _faker.Internet.Email());
+        _userRepositoryMock.Setup(repository => repository.GetByIdAsync(user.Id)).ReturnsAsync(user);
+
+        var result = await EntityAccessGuard.EnsureUserAccessAsync(_userRepositoryMock.Object, user.Id);
+        result.Should().Be(user);
+    }
+
+    [Fact]
+    public async Task EnsureUserAccess_EmptyUserId_ShouldThrowBadRequest()
+        => await FluentActions
+            .Awaiting(() => EntityAccessGuard.EnsureUserAccessAsync(_userRepositoryMock.Object, Guid.Empty))
+            .Should()
+            .ThrowAsync<BadRequestException>()
+            .WithMessage("Invalid id");
+
+    [Fact]
+    public async Task EnsureUserAccess_NonexistentUserId_ShouldThrowNotFound()
+    {
+        var userId = Guid.NewGuid();
+        _userRepositoryMock.Setup(repository => repository.GetByIdAsync(userId)).ReturnsAsync((User?)null);
+
+        await FluentActions
+            .Awaiting(() => EntityAccessGuard.EnsureUserAccessAsync(_userRepositoryMock.Object, userId))
+            .Should()
+            .ThrowAsync<NotFoundException>();
+    }
 
     [Fact]
     public async Task EnsureJournalAccess_ValidAccess_ShouldReturnJournal()

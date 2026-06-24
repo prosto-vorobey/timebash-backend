@@ -19,8 +19,7 @@ public class StatisticService(
 
     public async Task<UserAggregateStatisticResponse> GetUserAggregateStatisticAsync(Guid userId, DateTime? start, DateTime? end)
     {
-        if (userId == Guid.Empty) throw new BadRequestException("Invalid id");
-        if (await _userRepository.GetByIdAsync(userId) is null) throw new NotFoundException();
+        await EntityAccessGuard.EnsureUserAccessAsync(_userRepository, userId);
 
         var (totalTime, statItems) = await AggregateCategoryStatisticAsync(_queryService.GetActivitiesForUserAsync(userId, start, end), start, end);
 

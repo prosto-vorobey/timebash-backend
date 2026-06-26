@@ -1,6 +1,5 @@
 using Timebash.Application.Helpers;
 using Timebash.Core.DTOs.Responses;
-using Timebash.Core.Exceptions;
 using Timebash.Core.Repositories;
 using Timebash.Core.Services;
 
@@ -57,7 +56,7 @@ public class StatisticService(
         var timeWithoutCategory = 0L;
         var categoryTimes = new Dictionary<Guid, long>();
         var categoriesData = new Dictionary<Guid, Category>();
-    
+
         await foreach (var activity in activities)
         {
             var time = GetIntersectingTimeSeconds(activity, start, end);
@@ -82,8 +81,10 @@ public class StatisticService(
 
         var statItems = categoryTimes.Keys
             .Select(categoryId => new CategoryStatItem(categoryId, categoriesData[categoryId].Name, categoryTimes[categoryId]))
-            .Append(new(null, "Uncategorized", timeWithoutCategory))
             .ToList();
+
+        if (timeWithoutCategory > 0)
+            statItems.Add(new(null, "Uncategorized", timeWithoutCategory));
 
         return (totalTime, statItems);
     }

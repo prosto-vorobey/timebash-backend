@@ -1,4 +1,6 @@
 using System.Collections;
+using Timebash.Core.DTOs.Responses;
+using Timebash.Core.Entities;
 
 namespace Timebash.Tests.Unit.Application.Services.StatisticService.TestData;
 
@@ -20,7 +22,8 @@ public class JournalStatisticData : IEnumerable<object[]>
         yield return PrependData(AggregationScenarioBuilder.GetDataWithSomeActivitiesAndSingleCategory(createActivity, userId, durationSecond));
         yield return PrependData(AggregationScenarioBuilder.GetDataWithSomeActivitiesAndCategories(createActivity, userId, durationSecond));
 
-        object[] PrependData(object[] data) => [.. data.Prepend(userId).Prepend(journalId)];
+        object[] PrependData((List<Activity> Activities, long ExpectedTime, List<CategoryStatItem> ExpectedStats) data) 
+            => [journalId, userId, data.Activities, data.ExpectedTime, data.ExpectedStats];
     }
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

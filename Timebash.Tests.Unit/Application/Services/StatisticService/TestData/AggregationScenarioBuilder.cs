@@ -5,15 +5,17 @@ namespace Timebash.Tests.Unit.Application.Services.StatisticService.TestData;
 
 internal static class AggregationScenarioBuilder
 {
-    internal static object[] GetDataWithoutActivities()
+    internal static (List<Activity> Activities, long ExpectedTime, List<CategoryStatItem> ExpectedStats) GetDataWithoutActivities()
     {
         var expectedTime = 0L;
         var expectedStats = new List<CategoryStatItem>();
 
-        return [new List<Activity>(), expectedTime, expectedStats];
+        return (new List<Activity>(), expectedTime, expectedStats);
     }
 
-    internal static object[] GetDataWithZeroDurationActivity(Func<DateTime, long, Activity> createActivity, Guid userId)
+    internal static (List<Activity> Activities, long ExpectedTime, List<CategoryStatItem> ExpectedStats) GetDataWithZeroDurationActivity(
+        Func<DateTime, long, Activity> createActivity,
+        Guid userId)
     {
         var activity = createActivity(DateTime.MinValue, 0);
         var category = StatisticsTestDataFactory.CreateCategory(userId);
@@ -22,20 +24,25 @@ internal static class AggregationScenarioBuilder
         var expectedTime = 0;
         var expectedStats = new List<CategoryStatItem>();
 
-        return [new List<Activity> { activity }, expectedTime, expectedStats];
+        return (new List<Activity>(), expectedTime, expectedStats);
     }
 
-    internal static object[] GetDataWithActivityWithoutCategories(Func<DateTime, long, Activity> createActivity, long durationSecond)
+    internal static (List<Activity> Activities, long ExpectedTime, List<CategoryStatItem> ExpectedStats) GetDataWithActivityWithoutCategories(
+        Func<DateTime, long, Activity> createActivity,
+        long durationSecond)
     {
         var activity = createActivity(DateTime.MinValue, durationSecond);
 
         var expectedTime = durationSecond;
         var expectedStats = new List<CategoryStatItem> { new(null, "Uncategorized", durationSecond) };
 
-        return [new List<Activity> { activity }, expectedTime, expectedStats];
+        return (new List<Activity>(), expectedTime, expectedStats);
     }
 
-    internal static object[] GetDataWithSingleActivityAndCategory(Func<DateTime, long, Activity> createActivity, Guid userId, long durationSecond)
+    internal static (List<Activity> Activities, long ExpectedTime, List<CategoryStatItem> ExpectedStats) GetDataWithSingleActivityAndCategory(
+        Func<DateTime, long, Activity> createActivity,
+        Guid userId,
+        long durationSecond)
     {
         var activity = createActivity(DateTime.MinValue, durationSecond);
         var category = StatisticsTestDataFactory.CreateCategory(userId);
@@ -44,10 +51,13 @@ internal static class AggregationScenarioBuilder
         var expectedTime = durationSecond;
         var expectedStats = new List<CategoryStatItem> { new(category.Id, category.Name, expectedTime) };
 
-        return [new List<Activity> { activity }, expectedTime, expectedStats];
+        return (new List<Activity>(), expectedTime, expectedStats);
     }
 
-    internal static object[] GetDataWithSingleActivityAndSomeCategories(Func<DateTime, long, Activity> createActivity, Guid userId, long durationSecond)
+    internal static (List<Activity> Activities, long ExpectedTime, List<CategoryStatItem> ExpectedStats) GetDataWithSingleActivityAndSomeCategories(
+        Func<DateTime, long, Activity> createActivity,
+        Guid userId,
+        long durationSecond)
     {
         var activity = createActivity(DateTime.MinValue, durationSecond);
         var categories = new List<Category>
@@ -61,10 +71,12 @@ internal static class AggregationScenarioBuilder
         var expectedTime = durationSecond;
         var expectedStats = categories.Select(category => new CategoryStatItem(category.Id, category.Name, expectedTime)).ToList();
 
-        return [new List<Activity> { activity }, expectedTime, expectedStats];
+        return (new List<Activity>(), expectedTime, expectedStats);
     }
 
-    internal static object[] GetDataWithSomeActivitiesAndSingleCategory(Func<DateTime, long, Activity> createActivity, Guid userId, long durationSecond)
+    internal static (List<Activity> Activities, long ExpectedTime, List<CategoryStatItem> ExpectedStats) GetDataWithSomeActivitiesAndSingleCategory(
+        Func<DateTime, long, Activity> createActivity,
+        Guid userId, long durationSecond)
     {
         var activities = new List<Activity>
         {
@@ -78,10 +90,13 @@ internal static class AggregationScenarioBuilder
         var expectedTime = durationSecond * activities.Count;
         var expectedStats = new List<CategoryStatItem> { new(category.Id, category.Name, expectedTime) };
 
-        return [activities, expectedTime, expectedStats];
+        return (activities, expectedTime, expectedStats);
     }
 
-    internal static object[] GetDataWithSomeActivitiesAndCategories(Func<DateTime, long, Activity> createActivity, Guid userId, long durationSecond)
+    internal static (List<Activity> Activities, long ExpectedTime, List<CategoryStatItem> ExpectedStats) GetDataWithSomeActivitiesAndCategories(
+        Func<DateTime, long, Activity> createActivity,
+        Guid userId,
+        long durationSecond)
     {
         var activities = new List<Activity>
         {
@@ -107,7 +122,7 @@ internal static class AggregationScenarioBuilder
             new(null, "Uncategorized", durationSecond)
         };
 
-        return [activities, expectedTime, expectedStats];
+        return (activities, expectedTime, expectedStats);
     }
 
     internal static (List<Activity> Activities, long ExpectedTime, List<CategoryStatItem> ExpectedStats) GetDataWithStartDate(

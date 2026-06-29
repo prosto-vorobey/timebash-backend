@@ -16,8 +16,8 @@ internal static class AggregationScenarioBuilder
     internal static object[] GetDataWithZeroDurationActivity(Func<DateTime, long, Activity> createActivity, Guid userId)
     {
         var activity = createActivity(DateTime.MinValue, 0);
-        var category = ActivityTestDataFactory.GetNewCategory(userId);
-        ActivityTestDataFactory.AddCategoryToActivity(activity, category);
+        var category = StatisticsTestDataFactory.CreateCategory(userId);
+        StatisticsTestDataFactory.AssignCategoryTo(activity, category);
 
         var expectedTime = 0;
         var expectedStats = new List<CategoryStatItem>();
@@ -38,8 +38,8 @@ internal static class AggregationScenarioBuilder
     internal static object[] GetDataWithSingleActivityAndCategory(Func<DateTime, long, Activity> createActivity, Guid userId, long durationSecond)
     {
         var activity = createActivity(DateTime.MinValue, durationSecond);
-        var category = ActivityTestDataFactory.GetNewCategory(userId);
-        ActivityTestDataFactory.AddCategoryToActivity(activity, category);
+        var category = StatisticsTestDataFactory.CreateCategory(userId);
+        StatisticsTestDataFactory.AssignCategoryTo(activity, category);
 
         var expectedTime = durationSecond;
         var expectedStats = new List<CategoryStatItem> { new(category.Id, category.Name, expectedTime) };
@@ -52,11 +52,11 @@ internal static class AggregationScenarioBuilder
         var activity = createActivity(DateTime.MinValue, durationSecond);
         var categories = new List<Category>
         {
-            ActivityTestDataFactory.GetNewCategory(userId),
-            ActivityTestDataFactory.GetNewCategory(userId),
-            ActivityTestDataFactory.GetNewCategory(userId)
+            StatisticsTestDataFactory.CreateCategory(userId),
+            StatisticsTestDataFactory.CreateCategory(userId),
+            StatisticsTestDataFactory.CreateCategory(userId)
         };
-        categories.ForEach(category => ActivityTestDataFactory.AddCategoryToActivity(activity, category));
+        categories.ForEach(category => StatisticsTestDataFactory.AssignCategoryTo(activity, category));
 
         var expectedTime = durationSecond;
         var expectedStats = categories.Select(category => new CategoryStatItem(category.Id, category.Name, expectedTime)).ToList();
@@ -72,8 +72,8 @@ internal static class AggregationScenarioBuilder
             createActivity(new DateTime(2026, 06, 25, 0, 0, 0), durationSecond),
             createActivity(new DateTime(2026, 12, 31, 0, 0, 10), durationSecond)
         };
-        var category = ActivityTestDataFactory.GetNewCategory(userId);
-        activities.ForEach(activity => ActivityTestDataFactory.AddCategoryToActivity(activity, category));
+        var category = StatisticsTestDataFactory.CreateCategory(userId);
+        activities.ForEach(activity => StatisticsTestDataFactory.AssignCategoryTo(activity, category));
 
         var expectedTime = durationSecond * activities.Count;
         var expectedStats = new List<CategoryStatItem> { new(category.Id, category.Name, expectedTime) };
@@ -91,13 +91,13 @@ internal static class AggregationScenarioBuilder
         };
         var categories = new List<Category>
         {
-            ActivityTestDataFactory.GetNewCategory(userId),
-            ActivityTestDataFactory.GetNewCategory(userId)
+            StatisticsTestDataFactory.CreateCategory(userId),
+            StatisticsTestDataFactory.CreateCategory(userId)
         };
 
-        ActivityTestDataFactory.AddCategoryToActivity(activities[0], categories[0]);
-        ActivityTestDataFactory.AddCategoryToActivity(activities[1], categories[0]);
-        ActivityTestDataFactory.AddCategoryToActivity(activities[1], categories[1]);
+        StatisticsTestDataFactory.AssignCategoryTo(activities[0], categories[0]);
+        StatisticsTestDataFactory.AssignCategoryTo(activities[1], categories[0]);
+        StatisticsTestDataFactory.AssignCategoryTo(activities[1], categories[1]);
 
         var expectedTime = durationSecond * activities.Count;
         var expectedStats = new List<CategoryStatItem>

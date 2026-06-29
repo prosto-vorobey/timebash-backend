@@ -10,7 +10,7 @@ public class UserAggregateStatisticData : IEnumerable<object[]>
     public IEnumerator<object[]> GetEnumerator()
     {
         var userId = Guid.NewGuid();
-        Func<DateTime, long, Activity> createActivity = ActivityTestDataFactory.GetNewActivity;
+        Func<DateTime, long, Activity> createActivity = StatisticsTestDataFactory.CreateActivity;
 
         yield return PrependData(AggregationScenarioBuilder.GetDataWithoutActivities());
         yield return PrependData(AggregationScenarioBuilder.GetDataWithZeroDurationActivity(createActivity, userId));

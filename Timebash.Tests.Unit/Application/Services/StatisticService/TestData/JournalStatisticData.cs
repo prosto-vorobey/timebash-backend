@@ -10,7 +10,7 @@ public class JournalStatisticData : IEnumerable<object[]>
     {
         var userId = Guid.NewGuid();
         var journalId = Guid.NewGuid();
-        var createActivity = (DateTime start, long duration) => ActivityTestDataFactory.GetNewActivity(journalId, start, duration);
+        var createActivity = (DateTime start, long duration) => StatisticsTestDataFactory.CreateActivity(journalId, start, duration);
 
         yield return PrependData(AggregationScenarioBuilder.GetDataWithoutActivities());
         yield return PrependData(AggregationScenarioBuilder.GetDataWithZeroDurationActivity(createActivity, userId));

@@ -109,4 +109,100 @@ internal static class AggregationScenarioBuilder
 
         return [activities, expectedTime, expectedStats];
     }
+
+    internal static (List<Activity> Activities, long ExpectedTime, List<CategoryStatItem> ExpectedStats) GetDataWithStartDate(
+        Func<DateTime, long, Activity> createActivity,
+        Guid userId,
+        DateTime startDate,
+        long durationSecond)
+    {
+        var activities = new List<Activity>
+        {
+            createActivity(startDate.AddSeconds(-durationSecond), durationSecond / 2),
+            createActivity(startDate.AddSeconds(-durationSecond), durationSecond),
+            createActivity(startDate.AddSeconds(-durationSecond), durationSecond * 2),
+            createActivity(startDate.AddSeconds(durationSecond), durationSecond),
+        };
+        var categories = new List<Category>
+        {
+            StatisticsTestDataFactory.CreateCategory(userId),
+            StatisticsTestDataFactory.CreateCategory(userId),
+        };
+        StatisticsTestDataFactory.AssignCategoryTo(activities[0], categories[0]);
+        StatisticsTestDataFactory.AssignCategoryTo(activities[1], categories[0]);
+        StatisticsTestDataFactory.AssignCategoryTo(activities[2], categories[1]);
+        StatisticsTestDataFactory.AssignCategoryTo(activities[3], categories[1]);
+
+        var expectedTime = durationSecond * 2;
+        var expectedStats = new List<CategoryStatItem> { new(categories[1].Id, categories[1].Name, durationSecond * 2) };
+
+        return (activities, expectedTime, expectedStats);
+    }
+
+    internal static (List<Activity> Activities, long ExpectedTime, List<CategoryStatItem> ExpectedStats) GetDataWithEndDate(
+        Func<DateTime, long, Activity> createActivity,
+        Guid userId,
+        DateTime endDate,
+        long durationSecond)
+    {
+        var activities = new List<Activity>
+        {
+            createActivity(endDate.AddSeconds(durationSecond / 2), durationSecond / 2),
+            createActivity(endDate, durationSecond),
+            createActivity(endDate.AddSeconds(-durationSecond), durationSecond * 2),
+            createActivity(endDate.AddSeconds(-durationSecond * 2), durationSecond),
+        };
+        var categories = new List<Category>
+        {
+            StatisticsTestDataFactory.CreateCategory(userId),
+            StatisticsTestDataFactory.CreateCategory(userId),
+        };
+        StatisticsTestDataFactory.AssignCategoryTo(activities[0], categories[0]);
+        StatisticsTestDataFactory.AssignCategoryTo(activities[1], categories[0]);
+        StatisticsTestDataFactory.AssignCategoryTo(activities[2], categories[1]);
+        StatisticsTestDataFactory.AssignCategoryTo(activities[3], categories[1]);
+
+        var expectedTime = durationSecond * 2;
+        var expectedStats = new List<CategoryStatItem> { new(categories[1].Id, categories[1].Name, durationSecond * 2) };
+
+        return (activities, expectedTime, expectedStats);
+    }
+
+    internal static (List<Activity> Activities, long ExpectedTime, List<CategoryStatItem> ExpectedStats) GetDataWithStartAndEndDate(
+        Func<DateTime, long, Activity> createActivity,
+        Guid userId,
+        DateTime startDate,
+        DateTime endDate,
+        long durationSecond)
+    {
+        var activities = new List<Activity>
+        {
+            createActivity(startDate.AddSeconds(-durationSecond), durationSecond / 2),
+            createActivity(startDate.AddSeconds(-durationSecond), durationSecond),
+            createActivity(startDate.AddSeconds(-durationSecond), durationSecond * 2),
+            createActivity(startDate.AddSeconds(durationSecond), durationSecond),
+            createActivity(endDate.AddSeconds(-durationSecond * 2), durationSecond),
+            createActivity(endDate.AddSeconds(-durationSecond), durationSecond * 2),
+            createActivity(endDate, durationSecond),
+            createActivity(endDate.AddSeconds(durationSecond / 2), durationSecond / 2),
+        };
+        var categories = new List<Category>
+        {
+            StatisticsTestDataFactory.CreateCategory(userId),
+            StatisticsTestDataFactory.CreateCategory(userId),
+        };
+        StatisticsTestDataFactory.AssignCategoryTo(activities[0], categories[0]);
+        StatisticsTestDataFactory.AssignCategoryTo(activities[1], categories[0]);
+        StatisticsTestDataFactory.AssignCategoryTo(activities[2], categories[1]);
+        StatisticsTestDataFactory.AssignCategoryTo(activities[3], categories[1]);
+
+        var expectedTime = durationSecond * 4;
+        var expectedStats = new List<CategoryStatItem>
+        {
+            new(categories[1].Id, categories[1].Name, durationSecond * 2),
+            new(null, "Uncategorized", durationSecond * 2),
+        };
+
+        return (activities, expectedTime, expectedStats);
+    }
 }

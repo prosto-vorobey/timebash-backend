@@ -12,16 +12,18 @@ public class GetUserAggregateStatisticAsyncTests : StatisticServiceTestsBase
     [Theory]
     [ClassData(typeof(UserAggregateStatisticData))]
     public async Task GetUserAggregateStatistic_WithoutDateRange_ShouldReturnAllStatistic(
-    Guid userId,
-    List<Activity> activities,
-    long expectedTime,
-    List<CategoryStatItem> expectedStats)
+        Guid userId,
+        List<Activity> activities,
+        long expectedTime,
+        List<CategoryStatItem> expectedStats)
     {
         var user = new User(userId, Faker.Internet.UserName(), Faker.Internet.Email());
         var expected = new UserAggregateStatisticResponse(expectedTime, expectedStats);
 
         UserRepositoryMock.Setup(repository => repository.GetByIdAsync(user.Id)).ReturnsAsync(user);
-        ActivityQueryServiceMock.Setup(service => service.GetActivitiesForUserAsync(user.Id, null, null)).Returns(activities.ToAsyncEnumerable());
+        ActivityQueryServiceMock
+            .Setup(service => service.GetActivitiesForUserAsync(user.Id, null, null))
+            .Returns(activities.ToAsyncEnumerable());
 
         var result = await Service.GetUserAggregateStatisticAsync(user.Id, null, null);
         result.Should().BeEquivalentTo(expected);
@@ -36,7 +38,7 @@ public class GetUserAggregateStatisticAsyncTests : StatisticServiceTestsBase
         var user = new User(Guid.NewGuid(), Faker.Internet.UserName(), Faker.Internet.Email());
         var startDate = DateTime.MinValue.AddSeconds(DurationSecond);
 
-        var (activities, expectedTime, expectedStats) = AggregationScenarioBuilder.GetDataWithStartDate(
+        var (activities, expectedTime, expectedStats) = AggregationStatisticScenarioBuilder.GetDataWithStartDate(
             StatisticsTestDataFactory.CreateActivity,
             user.Id,
             startDate,
@@ -45,7 +47,9 @@ public class GetUserAggregateStatisticAsyncTests : StatisticServiceTestsBase
         var expected = new UserAggregateStatisticResponse(expectedTime, expectedStats);
 
         UserRepositoryMock.Setup(repository => repository.GetByIdAsync(user.Id)).ReturnsAsync(user);
-        ActivityQueryServiceMock.Setup(service => service.GetActivitiesForUserAsync(user.Id, startDate, null)).Returns(activities.ToAsyncEnumerable());
+        ActivityQueryServiceMock
+            .Setup(service => service.GetActivitiesForUserAsync(user.Id, startDate, null))
+            .Returns(activities.ToAsyncEnumerable());
 
         var result = await Service.GetUserAggregateStatisticAsync(user.Id, startDate, null);
         result.Should().BeEquivalentTo(expected);
@@ -60,7 +64,7 @@ public class GetUserAggregateStatisticAsyncTests : StatisticServiceTestsBase
         var user = new User(Guid.NewGuid(), Faker.Internet.UserName(), Faker.Internet.Email());
         var endDate = DateTime.MaxValue.AddSeconds(-DurationSecond);
 
-        var (activities, expectedTime, expectedStats) = AggregationScenarioBuilder.GetDataWithEndDate(
+        var (activities, expectedTime, expectedStats) = AggregationStatisticScenarioBuilder.GetDataWithEndDate(
             StatisticsTestDataFactory.CreateActivity,
             user.Id,
             endDate,
@@ -69,7 +73,9 @@ public class GetUserAggregateStatisticAsyncTests : StatisticServiceTestsBase
         var expected = new UserAggregateStatisticResponse(expectedTime, expectedStats);
 
         UserRepositoryMock.Setup(repository => repository.GetByIdAsync(user.Id)).ReturnsAsync(user);
-        ActivityQueryServiceMock.Setup(service => service.GetActivitiesForUserAsync(user.Id, null, endDate)).Returns(activities.ToAsyncEnumerable());
+        ActivityQueryServiceMock
+            .Setup(service => service.GetActivitiesForUserAsync(user.Id, null, endDate))
+            .Returns(activities.ToAsyncEnumerable());
 
         var result = await Service.GetUserAggregateStatisticAsync(user.Id, null, endDate);
         result.Should().BeEquivalentTo(expected);
@@ -85,7 +91,7 @@ public class GetUserAggregateStatisticAsyncTests : StatisticServiceTestsBase
         var startDate = DateTime.MinValue.AddSeconds(DurationSecond);
         var endDate = DateTime.MaxValue.AddSeconds(-DurationSecond);
 
-        var (activities, expectedTime, expectedStats) = AggregationScenarioBuilder.GetDataWithStartAndEndDate(
+        var (activities, expectedTime, expectedStats) = AggregationStatisticScenarioBuilder.GetDataWithStartAndEndDate(
             StatisticsTestDataFactory.CreateActivity,
             user.Id,
             startDate,
@@ -95,7 +101,9 @@ public class GetUserAggregateStatisticAsyncTests : StatisticServiceTestsBase
         var expected = new UserAggregateStatisticResponse(expectedTime, expectedStats);
 
         UserRepositoryMock.Setup(repository => repository.GetByIdAsync(user.Id)).ReturnsAsync(user);
-        ActivityQueryServiceMock.Setup(service => service.GetActivitiesForUserAsync(user.Id, startDate, endDate)).Returns(activities.ToAsyncEnumerable());
+        ActivityQueryServiceMock
+            .Setup(service => service.GetActivitiesForUserAsync(user.Id, startDate, endDate))
+            .Returns(activities.ToAsyncEnumerable());
 
         var result = await Service.GetUserAggregateStatisticAsync(user.Id, startDate, endDate);
         result.Should().BeEquivalentTo(expected);

@@ -17,10 +17,10 @@ public interface IStatisticService
     /// <returns>The aggregated statistics data for the user.</returns>
     /// <exception cref="BadRequestException">Thrown when <paramref name="userId"/> is empty.</exception>
     /// <exception cref="NotFoundException">Thrown when the user does not exist.</exception>
-
     Task<UserAggregateStatisticResponse> GetUserAggregateStatisticAsync(Guid userId, DateTime? start, DateTime? end);
+    
     /// <summary>
-    /// Returns statistics for a specific journal, optionally filtered by date range.
+    /// Returns aggregated statistics for a specific journal, optionally filtered by date range.
     /// </summary>
     /// <param name="journalId">The journal ID.</param>
     /// <param name="start">Optional start date (UTC). If <c>null</c>, activities from the journal's earliest record are included.</param>
@@ -29,8 +29,8 @@ public interface IStatisticService
     /// <returns>The journal statistics data.</returns>
     /// <exception cref="BadRequestException">Thrown when <paramref name="journalId"/> or <paramref name="userId"/> is empty.</exception>
     /// <exception cref="NotFoundException">Thrown when the journal does not exist or does not belong to the user.</exception>
-
-    Task<JournalStatisticResponse> GetJournalStatisticAsync(Guid journalId, DateTime? start, DateTime? end, Guid userId);
+    Task<JournalAggregateStatisticResponse> GetJournalAggregateStatisticAsync(Guid journalId, DateTime? start, DateTime? end, Guid userId);
+    
     /// <summary>
     /// Returns statistics for a specific category, optionally filtered by date range.
     /// </summary>

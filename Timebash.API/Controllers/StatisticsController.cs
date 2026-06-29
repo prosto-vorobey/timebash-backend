@@ -32,7 +32,7 @@ public class StatisticsController(ICurrentUserService currentUserService, IStati
         => Ok(await _statisticService.GetUserAggregateStatisticAsync(_currentUserService.GetCurrentUserId(), startTime, endTime));
 
     /// <summary>
-    /// Retrieves statistics for a specific journal, optionally filtered by date range.
+    /// Retrieves aggregated statistics for a specific journal, optionally filtered by date range.
     /// </summary>
     /// <param name="id">The journal ID.</param>
     /// <param name="startTime">Optional start date (UTC). If <c>null</c>, activities from the journal's earliest record are included.</param>
@@ -44,9 +44,9 @@ public class StatisticsController(ICurrentUserService currentUserService, IStati
     /// <response code="404">The journal was not found.</response>
     /// <response code="500">Internal server error. Check logs for details.</response>
     [HttpGet("journal/{id:guid}")]
-    [ProducesResponseType(typeof(JournalStatisticResponse), StatusCodes.Status200OK)]
-    public async Task<ActionResult<JournalStatisticResponse>> GetJournalStatistic(Guid id, DateTime? startTime = null, DateTime? endTime = null)
-        => Ok(await _statisticService.GetJournalStatisticAsync(id, startTime, endTime, _currentUserService.GetCurrentUserId()));
+    [ProducesResponseType(typeof(JournalAggregateStatisticResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<JournalAggregateStatisticResponse>> GetJournalAggregateStatistic(Guid id, DateTime? startTime = null, DateTime? endTime = null)
+        => Ok(await _statisticService.GetJournalAggregateStatisticAsync(id, startTime, endTime, _currentUserService.GetCurrentUserId()));
     
     /// <summary>
     /// Retrieves statistics for a specific category, optionally filtered by date range.

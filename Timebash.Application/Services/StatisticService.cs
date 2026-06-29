@@ -25,13 +25,13 @@ public class StatisticService(
         return new UserAggregateStatisticResponse(totalTime, statItems);
     }
 
-    public async Task<JournalStatisticResponse> GetJournalStatisticAsync(Guid journalId, DateTime? start, DateTime? end, Guid userId)
+    public async Task<JournalAggregateStatisticResponse> GetJournalAggregateStatisticAsync(Guid journalId, DateTime? start, DateTime? end, Guid userId)
     {
         await EntityAccessGuard.EnsureJournalAccessAsync(_journalRepository, journalId, userId);
 
         var (totalTime, statItems) = await AggregateCategoryStatisticAsync(_queryService.GetActivitiesForJournalAsync(journalId, start, end), start, end);
 
-        return new JournalStatisticResponse(totalTime, statItems);
+        return new JournalAggregateStatisticResponse(totalTime, statItems);
     }
 
     public async Task<CategoryStatisticResponse> GetCategoryStatisticAsync(Guid categoryId, DateTime? start, DateTime? end, Guid userId)

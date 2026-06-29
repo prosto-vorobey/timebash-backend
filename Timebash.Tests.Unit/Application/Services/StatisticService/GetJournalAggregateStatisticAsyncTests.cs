@@ -7,11 +7,11 @@ using Timebash.Tests.Unit.Application.Services.StatisticService.TestData;
 
 namespace Timebash.Tests.Unit.Application.Services.StatisticService;
 
-public class GetJournalStatisticAsyncTests : StatisticServiceTestsBase
+public class GetJournalAggregateStatisticAsyncTests : StatisticServiceTestsBase
 {
     [Theory]
-    [ClassData(typeof(JournalStatisticData))]
-    public async Task GetJournalStatistic_WithoutDateRange_ShouldReturnAllStatistic(
+    [ClassData(typeof(JournalAggregateStatisticData))]
+    public async Task GetJournalAggregateStatistic_WithoutDateRange_ShouldReturnAllStatistic(
         Guid journalId,
         Guid userId,
         List<Activity> activities,
@@ -19,12 +19,14 @@ public class GetJournalStatisticAsyncTests : StatisticServiceTestsBase
         List<CategoryStatItem> expectedStats)
     {
         var journal = new Journal(journalId, userId, Faker.Lorem.Word());
-        var expected = new JournalStatisticResponse(expectedTime, expectedStats);
+        var expected = new JournalAggregateStatisticResponse(expectedTime, expectedStats);
 
         JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
-        ActivityQueryServiceMock.Setup(service => service.GetActivitiesForJournalAsync(journal.Id, null, null)).Returns(activities.ToAsyncEnumerable());
+        ActivityQueryServiceMock
+            .Setup(service => service.GetActivitiesForJournalAsync(journal.Id, null, null))
+            .Returns(activities.ToAsyncEnumerable());
 
-        var result = await Service.GetJournalStatisticAsync(journal.Id, null, null, userId);
+        var result = await Service.GetJournalAggregateStatisticAsync(journal.Id, null, null, userId);
         result.Should().BeEquivalentTo(expected);
 
         JournalRepositoryMock.Verify(repository => repository.GetByIdAsync(journal.Id), Times.Once);
@@ -32,24 +34,26 @@ public class GetJournalStatisticAsyncTests : StatisticServiceTestsBase
     }
 
     [Fact]
-    public async Task GetJournalStatistic_WithStartDate_ShouldReturnCorrectStatistic()
+    public async Task GetJournalAggregateStatistic_WithStartDate_ShouldReturnCorrectStatistic()
     {
         var userId = Guid.NewGuid();
         var journal = new Journal(Guid.NewGuid(), userId, Faker.Lorem.Word());
         var startDate = DateTime.MinValue.AddSeconds(DurationSecond);
 
-        var (activities, expectedTime, expectedStats) = AggregationScenarioBuilder.GetDataWithStartDate(
+        var (activities, expectedTime, expectedStats) = AggregationStatisticScenarioBuilder.GetDataWithStartDate(
             CreateActivity(journal.Id),
             userId,
             startDate,
             DurationSecond
         );
-        var expected = new JournalStatisticResponse(expectedTime, expectedStats);
+        var expected = new JournalAggregateStatisticResponse(expectedTime, expectedStats);
 
         JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
-        ActivityQueryServiceMock.Setup(service => service.GetActivitiesForJournalAsync(journal.Id, startDate, null)).Returns(activities.ToAsyncEnumerable());
+        ActivityQueryServiceMock
+            .Setup(service => service.GetActivitiesForJournalAsync(journal.Id, startDate, null))
+            .Returns(activities.ToAsyncEnumerable());
 
-        var result = await Service.GetJournalStatisticAsync(journal.Id, startDate, null, userId);
+        var result = await Service.GetJournalAggregateStatisticAsync(journal.Id, startDate, null, userId);
         result.Should().BeEquivalentTo(expected);
 
         JournalRepositoryMock.Verify(repository => repository.GetByIdAsync(journal.Id), Times.Once);
@@ -57,24 +61,26 @@ public class GetJournalStatisticAsyncTests : StatisticServiceTestsBase
     }
 
     [Fact]
-    public async Task GetJournalStatistic_WithEndDate_ShouldReturnCorrectStatistic()
+    public async Task GetJournalAggregateStatistic_WithEndDate_ShouldReturnCorrectStatistic()
     {
         var userId = Guid.NewGuid();
         var journal = new Journal(Guid.NewGuid(), userId, Faker.Lorem.Word());
         var endDate = DateTime.MaxValue.AddSeconds(-DurationSecond);
 
-        var (activities, expectedTime, expectedStats) = AggregationScenarioBuilder.GetDataWithEndDate(
+        var (activities, expectedTime, expectedStats) = AggregationStatisticScenarioBuilder.GetDataWithEndDate(
             CreateActivity(journal.Id),
             userId,
             endDate,
             DurationSecond
         );
-        var expected = new JournalStatisticResponse(expectedTime, expectedStats);
+        var expected = new JournalAggregateStatisticResponse(expectedTime, expectedStats);
 
         JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
-        ActivityQueryServiceMock.Setup(service => service.GetActivitiesForJournalAsync(journal.Id, null, endDate)).Returns(activities.ToAsyncEnumerable());
+        ActivityQueryServiceMock
+            .Setup(service => service.GetActivitiesForJournalAsync(journal.Id, null, endDate))
+            .Returns(activities.ToAsyncEnumerable());
 
-        var result = await Service.GetJournalStatisticAsync(journal.Id, null, endDate, userId);
+        var result = await Service.GetJournalAggregateStatisticAsync(journal.Id, null, endDate, userId);
         result.Should().BeEquivalentTo(expected);
 
         JournalRepositoryMock.Verify(repository => repository.GetByIdAsync(journal.Id), Times.Once);
@@ -82,26 +88,28 @@ public class GetJournalStatisticAsyncTests : StatisticServiceTestsBase
     }
 
     [Fact]
-    public async Task GetJournalStatistic_WithStartAndEndDate_ShouldReturnCorrectStatistic()
+    public async Task GetJournalAggregateStatistic_WithStartAndEndDate_ShouldReturnCorrectStatistic()
     {
         var userId = Guid.NewGuid();
         var journal = new Journal(Guid.NewGuid(), userId, Faker.Lorem.Word());
         var startDate = DateTime.MinValue.AddSeconds(DurationSecond);
         var endDate = DateTime.MaxValue.AddSeconds(-DurationSecond);
 
-        var (activities, expectedTime, expectedStats) = AggregationScenarioBuilder.GetDataWithStartAndEndDate(
+        var (activities, expectedTime, expectedStats) = AggregationStatisticScenarioBuilder.GetDataWithStartAndEndDate(
             CreateActivity(journal.Id),
             userId,
             startDate,
             endDate,
             DurationSecond
         );
-        var expected = new JournalStatisticResponse(expectedTime, expectedStats);
+        var expected = new JournalAggregateStatisticResponse(expectedTime, expectedStats);
 
         JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
-        ActivityQueryServiceMock.Setup(service => service.GetActivitiesForJournalAsync(journal.Id, startDate, endDate)).Returns(activities.ToAsyncEnumerable());
+        ActivityQueryServiceMock
+            .Setup(service => service.GetActivitiesForJournalAsync(journal.Id, startDate, endDate))
+            .Returns(activities.ToAsyncEnumerable());
 
-        var result = await Service.GetJournalStatisticAsync(journal.Id, startDate, endDate, userId);
+        var result = await Service.GetJournalAggregateStatisticAsync(journal.Id, startDate, endDate, userId);
         result.Should().BeEquivalentTo(expected);
 
         JournalRepositoryMock.Verify(repository => repository.GetByIdAsync(journal.Id), Times.Once);
@@ -109,23 +117,24 @@ public class GetJournalStatisticAsyncTests : StatisticServiceTestsBase
     }
 
     [Fact]
-    public async Task GetJournalStatistic_EmptyId_ShouldThrowBadRequest()
+    public async Task GetJournalAggregateStatistic_EmptyId_ShouldThrowBadRequest()
         => await FluentActions
-            .Awaiting(() => Service.GetJournalStatisticAsync(Guid.Empty, null, null, Guid.NewGuid()))
+            .Awaiting(() => Service.GetJournalAggregateStatisticAsync(Guid.Empty, null, null, Guid.NewGuid()))
             .Should()
             .ThrowAsync<BadRequestException>();
 
     [Fact]
-    public async Task GetJournalStatistic_JournalNotFound_ShouldThrowNotFound()
+    public async Task GetJournalAggregateStatistic_JournalNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
         JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync((Journal?)null);
 
         await FluentActions
-            .Awaiting(() => Service.GetJournalStatisticAsync(id, null, null, Guid.NewGuid()))
+            .Awaiting(() => Service.GetJournalAggregateStatisticAsync(id, null, null, Guid.NewGuid()))
             .Should()
             .ThrowAsync<NotFoundException>();
     }
 
-    private static Func<DateTime, long, Activity> CreateActivity(Guid journalId) => (start, duration) => StatisticsTestDataFactory.CreateActivity(journalId, start, duration);
+    private static Func<DateTime, long, Activity> CreateActivity(Guid journalId) => (start, duration) 
+        => StatisticsTestDataFactory.CreateActivity(journalId, start, duration);
 }

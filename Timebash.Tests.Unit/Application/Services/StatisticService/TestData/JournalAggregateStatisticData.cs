@@ -4,14 +4,15 @@ using Timebash.Core.Entities;
 
 namespace Timebash.Tests.Unit.Application.Services.StatisticService.TestData;
 
-public class UserAggregateStatisticData : IEnumerable<object[]>
+public class JournalAggregateStatisticData : IEnumerable<object[]>
 {
     private static readonly long durationSecond = 86_400L;
 
     public IEnumerator<object[]> GetEnumerator()
     {
         var userId = Guid.NewGuid();
-        Func<DateTime, long, Activity> createActivity = StatisticsTestDataFactory.CreateActivity;
+        var journalId = Guid.NewGuid();
+        var createActivity = (DateTime start, long duration) => StatisticsTestDataFactory.CreateActivity(journalId, start, duration);
 
         yield return PrependData(AggregationStatisticScenarioBuilder.GetDataWithoutActivities());
         yield return PrependData(AggregationStatisticScenarioBuilder.GetDataWithZeroDurationActivity(createActivity, userId));
@@ -21,8 +22,8 @@ public class UserAggregateStatisticData : IEnumerable<object[]>
         yield return PrependData(AggregationStatisticScenarioBuilder.GetDataWithSomeActivitiesAndSingleCategory(createActivity, userId, durationSecond));
         yield return PrependData(AggregationStatisticScenarioBuilder.GetDataWithSomeActivitiesAndCategories(createActivity, userId, durationSecond));
 
-        object[] PrependData((List<Activity> Activities, long ExpectedTime, List<CategoryStatItem> ExpectedStats) data)
-            => [userId, data.Activities, data.ExpectedTime, data.ExpectedStats];
+        object[] PrependData((List<Activity> Activities, long ExpectedTime, List<CategoryStatItem> ExpectedStats) data) 
+            => [journalId, userId, data.Activities, data.ExpectedTime, data.ExpectedStats];
     }
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

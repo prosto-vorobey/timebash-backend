@@ -3,7 +3,7 @@ using Timebash.Core.Entities;
 
 namespace Timebash.Tests.Unit.Application.Services.StatisticService.TestData;
 
-internal static class AggregationScenarioBuilder
+internal static class AggregationStatisticScenarioBuilder
 {
     internal static (List<Activity> Activities, long ExpectedTime, List<CategoryStatItem> ExpectedStats) GetDataWithoutActivities()
     {

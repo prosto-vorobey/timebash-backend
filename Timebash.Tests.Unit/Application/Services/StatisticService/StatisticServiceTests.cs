@@ -74,6 +74,28 @@ public class StatisticServiceTests
             .ThrowAsync<NotFoundException>();
     }
 
+    [Theory]
+    [ClassData(typeof(JournalStatisticData))]
+    public async Task GetJournalStatistic_WithoutDateRange_ShouldReturnAllStatistic(
+        Guid journalId,
+        Guid userId,
+        List<Activity> activities,
+        long expectedTime,
+        List<CategoryStatItem> expectedStats)
+    {
+        var journal = new Journal(journalId, userId, _faker.Lorem.Word());
+        var expected = new JournalStatisticResponse(expectedTime, expectedStats);
+
+        _journalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
+        _activityQueryServiceMock.Setup(service => service.GetActivitiesForJournalAsync(journal.Id, null, null)).Returns(activities.ToAsyncEnumerable());
+
+        var result = await _service.GetJournalStatisticAsync(journal.Id, null, null, userId);
+        result.Should().BeEquivalentTo(expected);
+
+        _journalRepositoryMock.Verify(repository => repository.GetByIdAsync(journal.Id), Times.Once);
+        _activityQueryServiceMock.Verify(service => service.GetActivitiesForJournalAsync(journal.Id, null, null), Times.Once);
+    }
+
     [Fact]
     public async Task GetJournalStatistic_EmptyId_ShouldThrowBadRequest()
         => await FluentActions

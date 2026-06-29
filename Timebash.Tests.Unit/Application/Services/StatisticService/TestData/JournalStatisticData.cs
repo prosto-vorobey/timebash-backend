@@ -1,16 +1,16 @@
 using System.Collections;
-using Timebash.Core.Entities;
 
 namespace Timebash.Tests.Unit.Application.Services.StatisticService.TestData;
 
-public class UserAggregateStatisticData : IEnumerable<object[]>
+public class JournalStatisticData : IEnumerable<object[]>
 {
     private static readonly long durationSecond = 86_400L;
 
     public IEnumerator<object[]> GetEnumerator()
     {
         var userId = Guid.NewGuid();
-        Func<DateTime, long, Activity> createActivity = ActivityTestDataFactory.GetNewActivity;
+        var journalId = Guid.NewGuid();
+        var createActivity = (DateTime start, long duration) => ActivityTestDataFactory.GetNewActivity(journalId, start, duration);
 
         yield return PrependData(AggregationScenarioBuilder.GetDataWithoutActivities());
         yield return PrependData(AggregationScenarioBuilder.GetDataWithZeroDurationActivity(createActivity, userId));
@@ -20,7 +20,7 @@ public class UserAggregateStatisticData : IEnumerable<object[]>
         yield return PrependData(AggregationScenarioBuilder.GetDataWithSomeActivitiesAndSingleCategory(createActivity, userId, durationSecond));
         yield return PrependData(AggregationScenarioBuilder.GetDataWithSomeActivitiesAndCategories(createActivity, userId, durationSecond));
 
-        object[] PrependData(object[] data) => [.. data.Prepend(userId)];
+        object[] PrependData(object[] data) => [.. data.Prepend(userId).Prepend(journalId)];
     }
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

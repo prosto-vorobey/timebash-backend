@@ -24,7 +24,7 @@ internal static class AggregationScenarioBuilder
         var expectedTime = 0;
         var expectedStats = new List<CategoryStatItem>();
 
-        return (new List<Activity>(), expectedTime, expectedStats);
+        return (new List<Activity>{ activity }, expectedTime, expectedStats);
     }
 
     internal static (List<Activity> Activities, long ExpectedTime, List<CategoryStatItem> ExpectedStats) GetDataWithActivityWithoutCategories(
@@ -36,7 +36,7 @@ internal static class AggregationScenarioBuilder
         var expectedTime = durationSecond;
         var expectedStats = new List<CategoryStatItem> { new(null, "Uncategorized", durationSecond) };
 
-        return (new List<Activity>(), expectedTime, expectedStats);
+        return (new List<Activity>{ activity }, expectedTime, expectedStats);
     }
 
     internal static (List<Activity> Activities, long ExpectedTime, List<CategoryStatItem> ExpectedStats) GetDataWithSingleActivityAndCategory(
@@ -51,7 +51,7 @@ internal static class AggregationScenarioBuilder
         var expectedTime = durationSecond;
         var expectedStats = new List<CategoryStatItem> { new(category.Id, category.Name, expectedTime) };
 
-        return (new List<Activity>(), expectedTime, expectedStats);
+        return (new List<Activity>{ activity }, expectedTime, expectedStats);
     }
 
     internal static (List<Activity> Activities, long ExpectedTime, List<CategoryStatItem> ExpectedStats) GetDataWithSingleActivityAndSomeCategories(
@@ -71,12 +71,13 @@ internal static class AggregationScenarioBuilder
         var expectedTime = durationSecond;
         var expectedStats = categories.Select(category => new CategoryStatItem(category.Id, category.Name, expectedTime)).ToList();
 
-        return (new List<Activity>(), expectedTime, expectedStats);
+        return (new List<Activity>{ activity }, expectedTime, expectedStats);
     }
 
     internal static (List<Activity> Activities, long ExpectedTime, List<CategoryStatItem> ExpectedStats) GetDataWithSomeActivitiesAndSingleCategory(
         Func<DateTime, long, Activity> createActivity,
-        Guid userId, long durationSecond)
+        Guid userId,
+        long durationSecond)
     {
         var activities = new List<Activity>
         {

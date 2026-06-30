@@ -19,13 +19,29 @@ public class TimebashDbContext(DbContextOptions<TimebashDbContext> options) : Db
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<ActivityCategory>()
-            .HasKey(pair => new { pair.ActivityId, pair.CategoryId });
+        modelBuilder.Entity<Activity>(entity =>
+        {
+            entity.HasIndex(a => new { a.JournalId, a.StartTime, a.EndTime });
+            entity.HasIndex(a => new { a.JournalId, a.EndTime, a.StartTime })
+                .IsDescending(false, true, true);
+        });
 
+        modelBuilder.Entity<ActivityCategory>(entity =>
+        {
+            entity.HasKey(pair => new { pair.ActivityId, pair.CategoryId });
+            entity.HasIndex(ac => ac.CategoryId);
+        });
+            
         modelBuilder.Entity<Category>()
             .Property(category => category.Keywords)
             .HasColumnType("jsonb");
-        
+
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasIndex(u => u.Email).IsUnique();
+            entity.HasIndex(u => u.Name).IsUnique();
+        });
+
         modelBuilder.Entity<UserSettings>(entity =>
         {
             entity.HasKey(settings => settings.UserId);

@@ -26,7 +26,7 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
         JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
         ActivityRepositoryMock.Setup(repository => repository.GetByJournalIdAsync(journal.Id)).ReturnsAsync(activities);
 
-        var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, journal.UserId);
+        var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, null, null, journal.UserId);
 
         result.Should().BeEquivalentTo(expected);
     }
@@ -53,7 +53,7 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
             .Setup(repository => repository.GetByJournalIdAsync(journal.Id, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
             .ReturnsAsync(activities);
 
-        var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, journal.UserId, date);
+        var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, date, null, journal.UserId);
 
         result.Should().BeEquivalentTo(expected);
         ActivityRepositoryMock.Verify(
@@ -86,7 +86,7 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
             .Setup(repository => repository.GetByJournalIdAsync(journal.Id, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
             .ReturnsAsync(activities);
 
-        var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, journal.UserId, date, offsetMinutes);
+        var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, date, offsetMinutes, journal.UserId);
 
         result.Should().BeEquivalentTo(expected);
         ActivityRepositoryMock.Verify(
@@ -97,7 +97,7 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
     [Fact]
     public async Task GetActivitiesByJournalId_EmptyId_ShouldThrowBadRequest()
         => await FluentActions
-            .Awaiting(() => Service.GetActivitiesByJournalIdAsync(Guid.Empty, Guid.NewGuid()))
+            .Awaiting(() => Service.GetActivitiesByJournalIdAsync(Guid.Empty, null, null, Guid.NewGuid()))
             .Should()
             .ThrowAsync<BadRequestException>();
 
@@ -108,7 +108,7 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
         JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync((Journal?)null);
 
         await FluentActions
-            .Awaiting(() => Service.GetActivitiesByJournalIdAsync(id, Guid.NewGuid()))
+            .Awaiting(() => Service.GetActivitiesByJournalIdAsync(id, null, null, Guid.NewGuid()))
             .Should()
             .ThrowAsync<NotFoundException>();
     }

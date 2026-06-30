@@ -12,6 +12,7 @@ public static class ApplicationServicesConfiguration
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IMeService, MeService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IStatisticService, StatisticService>();
         services.AddScoped<IPasswordService, PasswordService>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
 

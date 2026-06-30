@@ -5,6 +5,14 @@ namespace Timebash.Application.Helpers;
 
 public static class EntityAccessGuard
 {
+    public static async Task<User> EnsureUserAccessAsync(IUserRepository repository, Guid id)
+    {
+        if (id == Guid.Empty) throw new BadRequestException("Invalid id");
+        var user = await repository.GetByIdAsync(id) ?? throw new NotFoundException();
+        
+        return user;
+    }
+
     public static async Task<Journal> EnsureJournalAccessAsync(IJournalRepository repository, Guid id, Guid userId)
     {
         if (id == Guid.Empty) throw new BadRequestException("Invalid id");

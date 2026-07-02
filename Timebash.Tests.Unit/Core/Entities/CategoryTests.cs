@@ -25,6 +25,7 @@ public class CategoryTests
         result.UserId.Should().Be(userId);
         result.Name.Should().Be(name);
         result.Color.Should().Be(color);
+        result.Keywords.Should().BeEmpty();
         result.CreatedAt.Should().BeOnOrAfter(timeBeforeCreate);
         result.CreatedAt.Should().Be(result.UpdatedAt);
     }
@@ -62,6 +63,7 @@ public class CategoryTests
     {
         var category = new Category(Guid.NewGuid(), Guid.NewGuid(), _faker.Lorem.Word(), "#000000");
         var newName = $"{category.Name} changed";
+        
         category.Name = newName;
         category.Name.Should().Be(newName);
     }
@@ -97,5 +99,27 @@ public class CategoryTests
             .Invoking(() => category.Color = color)
             .Should()
             .Throw<DomainValidationException>();
+    }
+
+    [Fact]
+    public void SetKeywords_WithNonNullList_ShouldUpdateKeywords()
+    {
+        var category = new Category(Guid.NewGuid(), Guid.NewGuid(), _faker.Lorem.Word(), "#000000");
+        var newKeywords = new List<string> { "keyword1", "keyword2" };
+
+        category.Keywords = newKeywords;
+        category.Keywords.Should().BeEquivalentTo(newKeywords);
+    }
+
+    [Fact]
+    public void SetKeywords_WithNull_ShouldSetEmptyList()
+    {
+        var category = new Category(Guid.NewGuid(), Guid.NewGuid(), _faker.Lorem.Word(), "#000000")
+        {
+            Keywords = [.. _faker.Lorem.Words()]
+        };
+
+        category.Keywords = null!;
+        category.Keywords.Should().BeEmpty();
     }
 }

@@ -85,17 +85,41 @@ public class CategoryExtensionsTests
     }
 
     [Fact]
+    public void ApplyUpdate_WhenKeywordsNull_ShouldNotUpdateKeywords()
+    {
+        var id = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var name = _faker.Lorem.Word();
+        var color = "#000000";
+        var keywords = _faker.Lorem.Words().ToList();
+        var category = new Category(id, userId, name, color)
+        {
+            Keywords = keywords  
+        };
+
+        var currentCreatedTime = category.CreatedAt;
+        var currentUpdatedTime = category.UpdatedAt;
+        var request = new CategoryRequest(name, color, null);
+
+        var result = category.ApplyUpdate(request);
+
+        result.Should().BeFalse();
+        AssertCategoryFields(category, id, userId, name, color, keywords, currentCreatedTime, currentUpdatedTime);
+    }
+
+    [Fact]
     public void ApplyUpdate_NoChanges_ShouldReturnFalse()
     {
         var id = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var name = _faker.Lorem.Word();
         var color = "#000000";
-        var keywords = new List<string>();
+        var keywords = _faker.Lorem.Words().ToList();
         var category = new Category(id, userId, name, color)
         {
             Keywords = keywords,
         };
+
         var currentCreatedTime = category.CreatedAt;
         var currentUpdatedTime = category.UpdatedAt;
         var request = new CategoryRequest(name, color, keywords);

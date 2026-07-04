@@ -40,7 +40,21 @@ public class DeleteAsyncTests : ActivityServiceTestsBase
         ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activityId)).ReturnsAsync((Activity?)null);
 
         await FluentActions
-            .Awaiting(() => Service.DeleteAsync(Guid.NewGuid(), Guid.NewGuid()))
+            .Awaiting(() => Service.DeleteAsync(activityId, Guid.NewGuid()))
+            .Should()
+            .ThrowAsync<NotFoundException>();
+    }
+
+    [Fact]
+    public async Task Delete_JournalNotFound_ShouldThrowNotFound()
+    {
+        var journalId = Guid.NewGuid();
+        var activity = new Activity(Guid.NewGuid(), journalId, DateTime.MinValue, DateTime.MaxValue);
+        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id)).ReturnsAsync(activity);
+        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journalId)).ReturnsAsync((Journal?)null);
+
+        await FluentActions
+            .Awaiting(() => Service.DeleteAsync(activity.Id, Guid.NewGuid()))
             .Should()
             .ThrowAsync<NotFoundException>();
     }

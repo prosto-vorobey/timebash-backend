@@ -34,6 +34,9 @@ public class PostgresActivityRepository(TimebashDbContext context) : PostgresRep
             .Select(pair => pair.CategoryId)
             .ToListAsync();
 
+    public async Task<bool> IsOwnedByUserAsync(Guid activityId, Guid userId)
+        => await Context.Activities.AnyAsync(activity => activity.Id == activityId && activity.Journal.UserId == userId);
+
     public Task<bool> IsCategoryLinkedAsync(Guid activityId, Guid categoryId)
         => Context.ActivityCategories.AnyAsync(pair =>
             pair.ActivityId == activityId &&
@@ -44,11 +47,11 @@ public class PostgresActivityRepository(TimebashDbContext context) : PostgresRep
 
     public void AddCategoriesToActivity(Guid activityId, IEnumerable<Guid> categoryIds)
         => Context.ActivityCategories.AddRange(categoryIds.Select(categoryId =>
-                new ActivityCategory
-                {
-                    ActivityId = activityId,
-                    CategoryId = categoryId
-                }));
+            new ActivityCategory
+            {
+                ActivityId = activityId,
+                CategoryId = categoryId
+            }));
 
     public async Task RemoveCategoryFromActivityAsync(Guid activityId, Guid categoryId)
     {

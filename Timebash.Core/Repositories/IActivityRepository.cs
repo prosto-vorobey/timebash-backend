@@ -7,6 +7,7 @@ public interface IActivityRepository : IRepository<Activity>
     Task<IEnumerable<Activity>> GetByIdsAsync(IEnumerable<Guid> activityIds);
     Task<IEnumerable<Category>> GetCategoriesByActivityIdAsync(Guid activityId);
     Task<IEnumerable<Guid>> GetCategoryIdsByActivityIdAsync(Guid activityId);
+    Task<bool> IsOwnedByUserAsync(Guid activityId, Guid userId);
     Task<bool> IsCategoryLinkedAsync(Guid activityId, Guid categoryId);
     void AddCategoryToActivity(Guid activityId, Guid categoryId);
     void AddCategoriesToActivity(Guid activityId, IEnumerable<Guid> categoryIds);

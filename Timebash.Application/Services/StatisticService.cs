@@ -18,7 +18,7 @@ public class StatisticService(
 
     public async Task<UserAggregateStatisticResponse> GetUserAggregateStatisticAsync(Guid userId, DateTime? start, DateTime? end)
     {
-        await EntityAccessGuard.EnsureUserAccessAsync(_userRepository, userId);
+        await EntityAccessGuard.ValidateUserExistsAsync(_userRepository, userId);
 
         var (totalTime, statItems) = await AggregateCategoryStatisticAsync(_queryService.GetActivitiesForUserAsync(userId, start, end), start, end);
 
@@ -27,7 +27,7 @@ public class StatisticService(
 
     public async Task<JournalAggregateStatisticResponse> GetJournalAggregateStatisticAsync(Guid journalId, DateTime? start, DateTime? end, Guid userId)
     {
-        await EntityAccessGuard.EnsureJournalAccessAsync(_journalRepository, journalId, userId);
+        await EntityAccessGuard.ValidateJournalAccessAsync(_journalRepository, journalId, userId);
 
         var (totalTime, statItems) = await AggregateCategoryStatisticAsync(_queryService.GetActivitiesForJournalAsync(journalId, start, end), start, end);
 
@@ -36,7 +36,7 @@ public class StatisticService(
 
     public async Task<CategoryStatisticResponse> GetCategoryStatisticAsync(Guid categoryId, DateTime? start, DateTime? end, Guid userId)
     {
-        await EntityAccessGuard.EnsureCategoryAccessAsync(_categoryRepository, categoryId, userId);
+        await EntityAccessGuard.ValidateCategoryAccessAsync(_categoryRepository, categoryId, userId);
         
         long totalTime = 0;
         await foreach (var activity in _queryService.GetActivitiesForCategoryAsync(categoryId, start, end))

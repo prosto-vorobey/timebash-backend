@@ -36,7 +36,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                         ]))
             ]);
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
         ActivityRepositoryMock
             .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
             .ReturnsAsync([overlap]);
@@ -75,7 +75,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(overlap.EndTime, truncatedEnd))
             ]);
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
         ActivityRepositoryMock
             .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
             .ReturnsAsync([overlap]);
@@ -114,7 +114,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(truncatedStart, overlap.StartTime))
             ]);
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
         ActivityRepositoryMock
             .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
             .ReturnsAsync([overlap]);
@@ -153,7 +153,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(truncatedEnd, truncatedEnd))
             ]);
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
         ActivityRepositoryMock
             .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
             .ReturnsAsync([overlap]);
@@ -194,7 +194,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new DeleteCorrection())
             ]);
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
         ActivityRepositoryMock
             .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, startTime, endTime))
             .ReturnsAsync([overlap]);
@@ -227,7 +227,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(overlap.EndTime, truncatedEnd))
             ]);
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
         ActivityRepositoryMock
             .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
             .ReturnsAsync([overlap]);
@@ -263,7 +263,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(truncatedStart, overlap.StartTime))
             ]);
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
         ActivityRepositoryMock
             .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
             .ReturnsAsync([overlap]);
@@ -334,7 +334,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(truncatedStart, overlaps[3].StartTime)),
             ]);
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
         ActivityRepositoryMock
             .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
             .ReturnsAsync(overlaps);
@@ -421,7 +421,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(truncatedStart, next.StartTime))
             ]);
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
         ActivityRepositoryMock
             .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
             .ReturnsAsync(overlaps);
@@ -460,7 +460,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(previous.EndTime, truncatedEnd)),
             ]);
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
         ActivityRepositoryMock
             .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
             .ReturnsAsync([]);
@@ -488,7 +488,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
         var truncatedEnd = endTime.TruncateToSecond();
         var previous = new Activity(Guid.NewGuid(), journal.Id, DateTime.MinValue, startTime, Faker.Lorem.Sentence());
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
         ActivityRepositoryMock
             .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
             .ReturnsAsync([]);
@@ -527,7 +527,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(truncatedStart, next.StartTime))
             ]);
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
         ActivityRepositoryMock
             .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
             .ReturnsAsync([]);
@@ -555,7 +555,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
         var truncatedEnd = endTime.TruncateToSecond();
         var next = new Activity(Guid.NewGuid(), journal.Id, endTime, DateTime.MaxValue, Faker.Lorem.Sentence());
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
         ActivityRepositoryMock
             .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
             .ReturnsAsync([]);
@@ -602,7 +602,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(truncatedStart, next.StartTime))
             ]);
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
         ActivityRepositoryMock
             .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
             .ReturnsAsync([]);
@@ -629,7 +629,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
         var truncatedStart = startTime.TruncateToSecond();
         var truncatedEnd = endTime.TruncateToSecond();
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
         ActivityRepositoryMock
             .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
             .ReturnsAsync([]);
@@ -657,11 +657,12 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
     [Fact]
     public async Task GetTimeCorrectionConflicts_JournalNotFound_ShouldThrowNotFound()
     {
-        var journalId = Guid.NewGuid();
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journalId)).ReturnsAsync((Journal?)null);
+        var id = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(id, userId)).ReturnsAsync(false);
 
         await FluentActions
-            .Awaiting(() => Service.GetTimeCorrectionConflictsAsync(Guid.NewGuid(), DateTime.MinValue, DateTime.MaxValue, Guid.NewGuid()))
+            .Awaiting(() => Service.GetTimeCorrectionConflictsAsync(id, DateTime.MinValue, DateTime.MaxValue, userId))
             .Should()
             .ThrowAsync<NotFoundException>();
     }

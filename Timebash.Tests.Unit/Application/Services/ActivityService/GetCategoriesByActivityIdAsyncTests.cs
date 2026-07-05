@@ -20,8 +20,7 @@ public class GetCategoriesByActivityIdAsyncTests : ActivityServiceTestsBase
         };
         var expected = new CategoriesListResponse([.. categories.Select(category => category.ToResponse())]);
 
-        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id)).ReturnsAsync(activity);
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId)).ReturnsAsync(true);
+        ActivityRepositoryMock.Setup(repository => repository.IsOwnedByUserAsync(activity.Id, userId)).ReturnsAsync(true);
         ActivityRepositoryMock.Setup(repository => repository.GetCategoriesByActivityIdAsync(activity.Id)).ReturnsAsync(categories);
 
         var result = await Service.GetCategoriesByActivityIdAsync(activity.Id, userId);
@@ -40,10 +39,11 @@ public class GetCategoriesByActivityIdAsyncTests : ActivityServiceTestsBase
     public async Task GetCategoriesByActivityId_ActivityNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync((Activity?)null);
+        var userId = Guid.NewGuid();
+        ActivityRepositoryMock.Setup(repository => repository.IsOwnedByUserAsync(id, userId)).ReturnsAsync(false);
 
         await FluentActions
-            .Awaiting(() => Service.GetCategoriesByActivityIdAsync(id, Guid.NewGuid()))
+            .Awaiting(() => Service.GetCategoriesByActivityIdAsync(id, userId))
             .Should()
             .ThrowAsync<NotFoundException>();
     }

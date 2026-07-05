@@ -16,10 +16,10 @@ public class UpdateAsyncTests : ActivityServiceTestsBase
     public async Task Update_WithActivityChanges_ShouldReturnTrueAndUpdate(Guid userId, List<Guid> categoryIds)
     {
         var activity = new Activity(Guid.NewGuid(), Guid.NewGuid(), DateTime.MinValue, DateTime.MaxValue);
-        var newJournal = new Journal(Guid.NewGuid(), userId, Faker.Lorem.Word());
+        var newJournalId = Guid.NewGuid();
         var clearedCategoryIds = categoryIds.Where(id => id != Guid.Empty).Distinct().ToList();
         var request = new ActivityRequest(
-            newJournal.Id,
+            newJournalId,
             Faker.Lorem.Sentence(),
             activity.StartTime.AddHours(1),
             activity.EndTime.AddHours(-1),
@@ -31,7 +31,7 @@ public class UpdateAsyncTests : ActivityServiceTestsBase
 
         ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id)).ReturnsAsync(activity);
         JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId)).ReturnsAsync(true);
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync(newJournal);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(newJournalId, userId)).ReturnsAsync(true);
         ActivityRepositoryMock.Setup(repository => repository.GetCategoryIdsByActivityIdAsync(activity.Id)).ReturnsAsync(clearedCategoryIds);
 
         var result = await Service.UpdateAsync(activity.Id, request, userId);
@@ -66,8 +66,7 @@ public class UpdateAsyncTests : ActivityServiceTestsBase
         var expected = new Activity(activity.Id, activity.JournalId, activity.StartTime, activity.EndTime, activity.Name);
 
         ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id)).ReturnsAsync(activity);
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId)).ReturnsAsync(true);
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, userId)).ReturnsAsync(true);
         ActivityRepositoryMock.Setup(repository => repository.GetCategoryIdsByActivityIdAsync(activity.Id)).ReturnsAsync([]);
         CategoryRepositoryMock.Setup(repository => repository.GetByIdsAsync(It.Is<IEnumerable<Guid>>(ids =>
                 ids.OrderBy(id => id).SequenceEqual(clearedCategoryIds.OrderBy(id => id))))).ReturnsAsync(categories);
@@ -91,7 +90,8 @@ public class UpdateAsyncTests : ActivityServiceTestsBase
     [Fact]
     public async Task Update_WithClearedCategories_ShouldReturnTrueAndUpdate()
     {
-        var journal = new Journal(Guid.NewGuid(), Guid.NewGuid(), Faker.Lorem.Word());
+        var userId = Guid.NewGuid();
+        var journal = new Journal(Guid.NewGuid(), userId, Faker.Lorem.Word());
         var activity = new Activity(Guid.NewGuid(), journal.Id, DateTime.MinValue, DateTime.MaxValue);
         var request = new ActivityRequest(activity.JournalId, activity.Name, activity.StartTime, activity.EndTime, []);
 
@@ -99,11 +99,10 @@ public class UpdateAsyncTests : ActivityServiceTestsBase
         var expected = new Activity(activity.Id, activity.JournalId, activity.StartTime, activity.EndTime, activity.Name);
 
         ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id)).ReturnsAsync(activity);
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, journal.UserId)).ReturnsAsync(true);
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, userId)).ReturnsAsync(true);
         ActivityRepositoryMock.Setup(repository => repository.GetCategoryIdsByActivityIdAsync(activity.Id)).ReturnsAsync([Guid.NewGuid()]);
 
-        var result = await Service.UpdateAsync(activity.Id, request, journal.UserId);
+        var result = await Service.UpdateAsync(activity.Id, request, userId);
 
         result.Should().BeTrue();
         activity.UpdatedAt.Should().BeAfter(currentUpdatedTime);
@@ -135,7 +134,6 @@ public class UpdateAsyncTests : ActivityServiceTestsBase
 
         ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id)).ReturnsAsync(activity);
         JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId)).ReturnsAsync(true);
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync(journal);
         ActivityRepositoryMock.Setup(repository => repository.GetCategoryIdsByActivityIdAsync(activity.Id)).ReturnsAsync(clearedCategoryIds);
 
         var result = await Service.UpdateAsync(activity.Id, request, userId);
@@ -167,12 +165,12 @@ public class UpdateAsyncTests : ActivityServiceTestsBase
     [Fact]
     public async Task Update_ActivityNotFound_ShouldThrowNotFound()
     {
-        var activityId = Guid.NewGuid();
-        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activityId)).ReturnsAsync((Activity?)null);
+        var id = Guid.NewGuid();
+        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync((Activity?)null);
 
         await FluentActions
             .Awaiting(() => Service.UpdateAsync(
-                activityId,
+                id,
                 new ActivityRequest(Guid.NewGuid(), string.Empty, DateTime.MinValue, DateTime.MaxValue, []), Guid.NewGuid()))
             .Should()
             .ThrowAsync<NotFoundException>();
@@ -198,12 +196,13 @@ public class UpdateAsyncTests : ActivityServiceTestsBase
     public async Task Update_JournalNotFound_ShouldThrowNotFound()
     {
         var activity = new Activity(Guid.NewGuid(), Guid.NewGuid(), DateTime.MinValue, DateTime.MaxValue);
+        var newJournalId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var request = new ActivityRequest(activity.JournalId, string.Empty, activity.StartTime, activity.EndTime, []);
+        var request = new ActivityRequest(newJournalId, string.Empty, activity.StartTime, activity.EndTime, []);
 
         ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id)).ReturnsAsync(activity);
         JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId)).ReturnsAsync(true);
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync((Journal?)null);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(newJournalId, userId)).ReturnsAsync(false);
 
         await FluentActions
             .Awaiting(() => Service.UpdateAsync(activity.Id, request, userId))
@@ -223,7 +222,6 @@ public class UpdateAsyncTests : ActivityServiceTestsBase
 
         ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id)).ReturnsAsync(activity);
         JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, journal.UserId)).ReturnsAsync(true);
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync(journal);
 
         await FluentActions
             .Awaiting(() => Service.UpdateAsync(activity.Id, request, journal.UserId))
@@ -241,7 +239,6 @@ public class UpdateAsyncTests : ActivityServiceTestsBase
 
         ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id)).ReturnsAsync(activity);
         JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId)).ReturnsAsync(true);
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync(journal);
         CategoryRepositoryMock.Setup(repository => repository.GetByIdsAsync(It.IsAny<List<Guid>>())).ReturnsAsync(categories.Skip(1));
 
         await FluentActions
@@ -261,7 +258,6 @@ public class UpdateAsyncTests : ActivityServiceTestsBase
 
         ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id)).ReturnsAsync(activity);
         JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId)).ReturnsAsync(true);
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync(journal);
         CategoryRepositoryMock.Setup(repository => repository.GetByIdsAsync(It.IsAny<List<Guid>>())).ReturnsAsync(categories);
 
         await FluentActions

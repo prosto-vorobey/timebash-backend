@@ -21,7 +21,7 @@ public class GetJournalAggregateStatisticAsyncTests : StatisticServiceTestsBase
         var journal = new Journal(journalId, userId, Faker.Lorem.Word());
         var expected = new JournalAggregateStatisticResponse(expectedTime, expectedStats);
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, userId)).ReturnsAsync(true);
         ActivityQueryServiceMock
             .Setup(service => service.GetActivitiesForJournalAsync(journal.Id, null, null))
             .Returns(activities.ToAsyncEnumerable());
@@ -29,7 +29,7 @@ public class GetJournalAggregateStatisticAsyncTests : StatisticServiceTestsBase
         var result = await Service.GetJournalAggregateStatisticAsync(journal.Id, null, null, userId);
         result.Should().BeEquivalentTo(expected);
 
-        JournalRepositoryMock.Verify(repository => repository.GetByIdAsync(journal.Id), Times.Once);
+        JournalRepositoryMock.Verify(repository => repository.IsUserLinkedAsync(journal.Id, userId), Times.Once);
         ActivityQueryServiceMock.Verify(service => service.GetActivitiesForJournalAsync(journal.Id, null, null), Times.Once);
     }
 
@@ -48,7 +48,7 @@ public class GetJournalAggregateStatisticAsyncTests : StatisticServiceTestsBase
         );
         var expected = new JournalAggregateStatisticResponse(expectedTime, expectedStats);
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, userId)).ReturnsAsync(true);
         ActivityQueryServiceMock
             .Setup(service => service.GetActivitiesForJournalAsync(journal.Id, startDate, null))
             .Returns(activities.ToAsyncEnumerable());
@@ -56,7 +56,7 @@ public class GetJournalAggregateStatisticAsyncTests : StatisticServiceTestsBase
         var result = await Service.GetJournalAggregateStatisticAsync(journal.Id, startDate, null, userId);
         result.Should().BeEquivalentTo(expected);
 
-        JournalRepositoryMock.Verify(repository => repository.GetByIdAsync(journal.Id), Times.Once);
+        JournalRepositoryMock.Verify(repository => repository.IsUserLinkedAsync(journal.Id, userId), Times.Once);
         ActivityQueryServiceMock.Verify(service => service.GetActivitiesForJournalAsync(journal.Id, startDate, null), Times.Once);
     }
 
@@ -75,7 +75,7 @@ public class GetJournalAggregateStatisticAsyncTests : StatisticServiceTestsBase
         );
         var expected = new JournalAggregateStatisticResponse(expectedTime, expectedStats);
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, userId)).ReturnsAsync(true);
         ActivityQueryServiceMock
             .Setup(service => service.GetActivitiesForJournalAsync(journal.Id, null, endDate))
             .Returns(activities.ToAsyncEnumerable());
@@ -83,7 +83,7 @@ public class GetJournalAggregateStatisticAsyncTests : StatisticServiceTestsBase
         var result = await Service.GetJournalAggregateStatisticAsync(journal.Id, null, endDate, userId);
         result.Should().BeEquivalentTo(expected);
 
-        JournalRepositoryMock.Verify(repository => repository.GetByIdAsync(journal.Id), Times.Once);
+        JournalRepositoryMock.Verify(repository => repository.IsUserLinkedAsync(journal.Id, userId), Times.Once);
         ActivityQueryServiceMock.Verify(service => service.GetActivitiesForJournalAsync(journal.Id, null, endDate), Times.Once);
     }
 
@@ -104,7 +104,7 @@ public class GetJournalAggregateStatisticAsyncTests : StatisticServiceTestsBase
         );
         var expected = new JournalAggregateStatisticResponse(expectedTime, expectedStats);
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, userId)).ReturnsAsync(true);
         ActivityQueryServiceMock
             .Setup(service => service.GetActivitiesForJournalAsync(journal.Id, startDate, endDate))
             .Returns(activities.ToAsyncEnumerable());
@@ -112,7 +112,7 @@ public class GetJournalAggregateStatisticAsyncTests : StatisticServiceTestsBase
         var result = await Service.GetJournalAggregateStatisticAsync(journal.Id, startDate, endDate, userId);
         result.Should().BeEquivalentTo(expected);
 
-        JournalRepositoryMock.Verify(repository => repository.GetByIdAsync(journal.Id), Times.Once);
+        JournalRepositoryMock.Verify(repository => repository.IsUserLinkedAsync(journal.Id, userId), Times.Once);
         ActivityQueryServiceMock.Verify(service => service.GetActivitiesForJournalAsync(journal.Id, startDate, endDate), Times.Once);
     }
 
@@ -127,10 +127,11 @@ public class GetJournalAggregateStatisticAsyncTests : StatisticServiceTestsBase
     public async Task GetJournalAggregateStatistic_JournalNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync((Journal?)null);
+        var userId = Guid.NewGuid();
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(id, userId)).ReturnsAsync(false);
 
         await FluentActions
-            .Awaiting(() => Service.GetJournalAggregateStatisticAsync(id, null, null, Guid.NewGuid()))
+            .Awaiting(() => Service.GetJournalAggregateStatisticAsync(id, null, null, userId))
             .Should()
             .ThrowAsync<NotFoundException>();
     }

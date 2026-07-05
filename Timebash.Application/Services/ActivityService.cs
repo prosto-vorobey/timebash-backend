@@ -27,7 +27,7 @@ public class ActivityService(
 
     public async Task<CategoriesListResponse> GetCategoriesByActivityIdAsync(Guid id, Guid userId)
     {
-        await EntityAccessGuard.EnsureActivityAccessAsync(_activityRepository, _journalRepository, id, userId);
+        await EntityAccessGuard.ValidateActivityAccessAsync(_activityRepository, id, userId);
         var categories = await _activityRepository.GetCategoriesByActivityIdAsync(id);
         return new ([.. categories.Select(category => category.ToResponse())]);
     }
@@ -135,7 +135,7 @@ public class ActivityService(
     public async Task<bool> AddCategoryToActivityAsync(Guid activityId, Guid categoryId, Guid userId)
     {
         var activity = await EntityAccessGuard.EnsureActivityAccessAsync(_activityRepository, _journalRepository, activityId, userId);
-        await EntityAccessGuard.EnsureCategoryAccessAsync(_categoryRepository, categoryId, userId);
+        await EntityAccessGuard.ValidateCategoryAccessAsync(_categoryRepository, categoryId, userId);
         if (await _activityRepository.IsCategoryLinkedAsync(activityId, categoryId)) return false;
 
         _activityRepository.AddCategoryToActivity(activityId, categoryId);
@@ -161,7 +161,7 @@ public class ActivityService(
     public async Task<bool> UpdateAsync(Guid id, ActivityRequest request, Guid userId)
     {
         var activity = await EntityAccessGuard.EnsureActivityAccessAsync(_activityRepository, _journalRepository, id, userId);
-        await EntityAccessGuard.EnsureJournalAccessAsync(_journalRepository, request.JournalId, userId);
+        await EntityAccessGuard.ValidateJournalAccessAsync(_journalRepository, request.JournalId, userId);
 
         var isActivityUpdated = activity.ApplyUpdate(request);
         var isCategoriesUpdated = await UpdateCategoriesAsync(activity.Id, request.CategoryIds, userId);
@@ -196,7 +196,7 @@ public class ActivityService(
     public async Task<bool> RemoveCategoryFromActivityAsync(Guid activityId, Guid categoryId, Guid userId)
     {
         var activity = await EntityAccessGuard.EnsureActivityAccessAsync(_activityRepository, _journalRepository, activityId, userId);
-        await EntityAccessGuard.EnsureCategoryAccessAsync(_categoryRepository, categoryId, userId);
+        await EntityAccessGuard.ValidateCategoryAccessAsync(_categoryRepository, categoryId, userId);
         if (!await _activityRepository.IsCategoryLinkedAsync(activityId, categoryId)) return false;
 
         await _activityRepository.RemoveCategoryFromActivityAsync(activityId, categoryId);

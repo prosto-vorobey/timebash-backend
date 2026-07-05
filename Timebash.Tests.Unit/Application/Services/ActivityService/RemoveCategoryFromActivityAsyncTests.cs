@@ -17,7 +17,7 @@ public class RemoveCategoryFromActivityAsyncTests : ActivityServiceTestsBase
 
         ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id)).ReturnsAsync(activity);
         JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId)).ReturnsAsync(true);
-        CategoryRepositoryMock.Setup(repository => repository.GetByIdAsync(category.Id)).ReturnsAsync(category);
+        CategoryRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(category.Id, userId)).ReturnsAsync(true);
         ActivityRepositoryMock.Setup(repository => repository.IsCategoryLinkedAsync(activity.Id, category.Id)).ReturnsAsync(true);
 
         var result = await Service.RemoveCategoryFromActivityAsync(activity.Id, category.Id, userId);
@@ -39,7 +39,7 @@ public class RemoveCategoryFromActivityAsyncTests : ActivityServiceTestsBase
 
         ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id)).ReturnsAsync(activity);
         JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId)).ReturnsAsync(true);
-        CategoryRepositoryMock.Setup(repository => repository.GetByIdAsync(category.Id)).ReturnsAsync(category);
+        CategoryRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(category.Id, userId)).ReturnsAsync(true);
         ActivityRepositoryMock.Setup(repository => repository.IsCategoryLinkedAsync(activity.Id, category.Id)).ReturnsAsync(false);
 
         var result = await Service.RemoveCategoryFromActivityAsync(activity.Id, category.Id, userId);
@@ -94,7 +94,7 @@ public class RemoveCategoryFromActivityAsyncTests : ActivityServiceTestsBase
 
         ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id)).ReturnsAsync(activity);
         JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId)).ReturnsAsync(true);
-        CategoryRepositoryMock.Setup(repository => repository.GetByIdAsync(categoryId)).ReturnsAsync((Category?)null);
+        CategoryRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(categoryId, userId)).ReturnsAsync(false);
 
         await FluentActions
             .Awaiting(() => Service.RemoveCategoryFromActivityAsync(activity.Id, categoryId, userId))

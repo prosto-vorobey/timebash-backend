@@ -10,8 +10,5 @@ public class PostgresJournalRepository(TimebashDbContext context) : PostgresRepo
             .ToListAsync();
 
     public async Task<bool> IsUserLinkedAsync(Guid journalId, Guid userId)
-    {
-        var journal = await GetByIdAsync(journalId);
-        return journal?.UserId == userId;
-    }
+        => await Context.Journals.AnyAsync(journal => journal.Id == journalId && journal.User.Id == userId);
 }

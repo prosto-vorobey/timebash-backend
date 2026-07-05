@@ -27,7 +27,7 @@ public class EntityAccessGuardTests
     }
 
     [Fact]
-    public async Task EnsureUserAccess_EmptyUserId_ShouldThrowBadRequest()
+    public async Task EnsureUserAccess_EmptyId_ShouldThrowBadRequest()
         => await FluentActions
             .Awaiting(() => EntityAccessGuard.EnsureUserAccessAsync(_userRepositoryMock.Object, Guid.Empty))
             .Should()
@@ -35,13 +35,42 @@ public class EntityAccessGuardTests
             .WithMessage("Invalid id");
 
     [Fact]
-    public async Task EnsureUserAccess_NonexistentUserId_ShouldThrowNotFound()
+    public async Task EnsureUserAccess_NonexistentId_ShouldThrowNotFound()
     {
-        var userId = Guid.NewGuid();
-        _userRepositoryMock.Setup(repository => repository.GetByIdAsync(userId)).ReturnsAsync((User?)null);
+        var id = Guid.NewGuid();
+        _userRepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync((User?)null);
 
         await FluentActions
-            .Awaiting(() => EntityAccessGuard.EnsureUserAccessAsync(_userRepositoryMock.Object, userId))
+            .Awaiting(() => EntityAccessGuard.EnsureUserAccessAsync(_userRepositoryMock.Object, id))
+            .Should()
+            .ThrowAsync<NotFoundException>();
+    }
+
+    [Fact]
+    public async Task ValidateUserExists_WhenExists_ShouldReturn()
+    {
+        var id = Guid.NewGuid();
+        _userRepositoryMock.Setup(repository => repository.ExistsAsync(id)).ReturnsAsync(true);
+
+        await EntityAccessGuard.ValidateUserExistsAsync(_userRepositoryMock.Object, id);
+    }
+
+    [Fact]
+    public async Task ValidateUserExists_EmptyId_ShouldThrowBadRequest()
+        => await FluentActions
+            .Awaiting(() => EntityAccessGuard.ValidateUserExistsAsync(_userRepositoryMock.Object, Guid.Empty))
+            .Should()
+            .ThrowAsync<BadRequestException>()
+            .WithMessage("Invalid id");
+
+    [Fact]
+    public async Task ValidateUserExists_NonexistentId_ShouldThrowNotFound()
+    {
+        var id = Guid.NewGuid();
+        _userRepositoryMock.Setup(repository => repository.ExistsAsync(id)).ReturnsAsync(false);
+
+        await FluentActions
+            .Awaiting(() => EntityAccessGuard.ValidateUserExistsAsync(_userRepositoryMock.Object, id))
             .Should()
             .ThrowAsync<NotFoundException>();
     }
@@ -67,11 +96,11 @@ public class EntityAccessGuardTests
     [Fact]
     public async Task EnsureJournalAccess_NonexistentJournalId_ShouldThrowNotFound()
     {
-        var journalId = Guid.NewGuid();
-        _journalRepositoryMock.Setup(repository => repository.GetByIdAsync(journalId)).ReturnsAsync((Journal?)null);
+        var id = Guid.NewGuid();
+        _journalRepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync((Journal?)null);
 
         await FluentActions
-            .Awaiting(() => EntityAccessGuard.EnsureJournalAccessAsync(_journalRepositoryMock.Object, journalId, Guid.NewGuid()))
+            .Awaiting(() => EntityAccessGuard.EnsureJournalAccessAsync(_journalRepositoryMock.Object, id, Guid.NewGuid()))
             .Should()
             .ThrowAsync<NotFoundException>();
     }
@@ -84,6 +113,37 @@ public class EntityAccessGuardTests
 
         await FluentActions
             .Awaiting(() => EntityAccessGuard.EnsureJournalAccessAsync(_journalRepositoryMock.Object, journal.Id, Guid.NewGuid()))
+            .Should()
+            .ThrowAsync<NotFoundException>();
+    }
+
+    [Fact]
+    public async Task ValidateJournalAccess_WhenExists_ShouldReturn()
+    {
+        var id = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        _journalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(id, userId)).ReturnsAsync(true);
+
+        await EntityAccessGuard.ValidateJournalAccessAsync(_journalRepositoryMock.Object, id, userId);
+    }
+
+    [Fact]
+    public async Task ValidateJournalAccess_EmptyJournalId_ShouldThrowBadRequest()
+        => await FluentActions
+            .Awaiting(() => EntityAccessGuard.ValidateJournalAccessAsync(_journalRepositoryMock.Object, Guid.Empty, Guid.NewGuid()))
+            .Should()
+            .ThrowAsync<BadRequestException>()
+            .WithMessage("Invalid id");
+
+    [Fact]
+    public async Task ValidateJournalAccess_NotUserLinked_ShouldThrowNotFound()
+    {
+        var id = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        _journalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(id, userId)).ReturnsAsync(false);
+
+        await FluentActions
+            .Awaiting(() => EntityAccessGuard.ValidateJournalAccessAsync(_journalRepositoryMock.Object, id, userId))
             .Should()
             .ThrowAsync<NotFoundException>();
     }
@@ -109,11 +169,11 @@ public class EntityAccessGuardTests
     [Fact]
     public async Task EnsureCategoryAccess_NonexistentCategoryId_ShouldThrowNotFound()
     {
-        var categoryId = Guid.NewGuid();
-        _categoryRepositoryMock.Setup(repository => repository.GetByIdAsync(categoryId)).ReturnsAsync((Category?)null);
+        var id = Guid.NewGuid();
+        _categoryRepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync((Category?)null);
 
         await FluentActions
-            .Awaiting(() => EntityAccessGuard.EnsureCategoryAccessAsync(_categoryRepositoryMock.Object, categoryId, Guid.NewGuid()))
+            .Awaiting(() => EntityAccessGuard.EnsureCategoryAccessAsync(_categoryRepositoryMock.Object, id, Guid.NewGuid()))
             .Should()
             .ThrowAsync<NotFoundException>();
     }
@@ -126,6 +186,37 @@ public class EntityAccessGuardTests
 
         await FluentActions
             .Awaiting(() => EntityAccessGuard.EnsureCategoryAccessAsync(_categoryRepositoryMock.Object, category.Id, Guid.NewGuid()))
+            .Should()
+            .ThrowAsync<NotFoundException>();
+    }
+
+    [Fact]
+    public async Task ValidateCategoryAccess_WhenExists_ShouldReturn()
+    {
+        var id = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        _categoryRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(id, userId)).ReturnsAsync(true);
+
+        await EntityAccessGuard.ValidateCategoryAccessAsync(_categoryRepositoryMock.Object, id, userId);
+    }
+
+    [Fact]
+    public async Task ValidateCategoryAccess_EmptyCategoryId_ShouldThrowBadRequest()
+        => await FluentActions
+            .Awaiting(() => EntityAccessGuard.ValidateCategoryAccessAsync(_categoryRepositoryMock.Object, Guid.Empty, Guid.NewGuid()))
+            .Should()
+            .ThrowAsync<BadRequestException>()
+            .WithMessage("Invalid id");
+
+    [Fact]
+    public async Task ValidateCategoryAccess_NotUserLinked_ShouldThrowNotFound()
+    {
+        var id = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        _categoryRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(id, userId)).ReturnsAsync(false);
+
+        await FluentActions
+            .Awaiting(() => EntityAccessGuard.ValidateCategoryAccessAsync(_categoryRepositoryMock.Object, id, userId))
             .Should()
             .ThrowAsync<NotFoundException>();
     }
@@ -154,11 +245,11 @@ public class EntityAccessGuardTests
     [Fact]
     public async Task EnsureActivityAccess_NonexistentActivityId_ShouldThrowNotFound()
     {
-        var activityId = Guid.NewGuid();
-        _activityRepositoryMock.Setup(repository => repository.GetByIdAsync(activityId)).ReturnsAsync((Activity?)null);
+        var id = Guid.NewGuid();
+        _activityRepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync((Activity?)null);
 
         await FluentActions
-            .Awaiting(() => EntityAccessGuard.EnsureActivityAccessAsync(_activityRepositoryMock.Object, _journalRepositoryMock.Object, activityId, Guid.NewGuid()))
+            .Awaiting(() => EntityAccessGuard.EnsureActivityAccessAsync(_activityRepositoryMock.Object, _journalRepositoryMock.Object, id, Guid.NewGuid()))
             .Should()
             .ThrowAsync<NotFoundException>();
     }
@@ -174,6 +265,37 @@ public class EntityAccessGuardTests
 
         await FluentActions
             .Awaiting(() => EntityAccessGuard.EnsureActivityAccessAsync(_activityRepositoryMock.Object, _journalRepositoryMock.Object, activity.Id, userId))
+            .Should()
+            .ThrowAsync<NotFoundException>();
+    }
+
+    [Fact]
+    public async Task ValidateActivityAccess_WhenExists_ShouldReturn()
+    {
+        var id = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        _activityRepositoryMock.Setup(repository => repository.IsOwnedByUserAsync(id, userId)).ReturnsAsync(true);
+
+        await EntityAccessGuard.ValidateActivityAccessAsync(_activityRepositoryMock.Object, id, userId);
+    }
+
+    [Fact]
+    public async Task ValidateActivityAccess_EmptyActivityId_ShouldThrowBadRequest()
+        => await FluentActions
+            .Awaiting(() => EntityAccessGuard.ValidateActivityAccessAsync(_activityRepositoryMock.Object, Guid.Empty, Guid.NewGuid()))
+            .Should()
+            .ThrowAsync<BadRequestException>()
+            .WithMessage("Invalid id");
+
+    [Fact]
+    public async Task ValidateActivityAccess_NotUserLinked_ShouldThrowNotFound()
+    {
+        var id = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        _activityRepositoryMock.Setup(repository => repository.IsOwnedByUserAsync(id, userId)).ReturnsAsync(false);
+
+        await FluentActions
+            .Awaiting(() => EntityAccessGuard.ValidateActivityAccessAsync(_activityRepositoryMock.Object, id, userId))
             .Should()
             .ThrowAsync<NotFoundException>();
     }

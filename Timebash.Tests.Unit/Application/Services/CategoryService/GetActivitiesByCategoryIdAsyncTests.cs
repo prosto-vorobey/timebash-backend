@@ -19,7 +19,7 @@ public class GetActivitiesByCategoryIdAsyncTests : CategoryServiceTestsBase
         };
         var expected = new ActivitiesListResponse([.. activities.Select(activity => activity.ToResponse())]);
 
-        RepositoryMock.Setup(repository => repository.GetByIdAsync(category.Id)).ReturnsAsync(category);
+        RepositoryMock.Setup(repository => repository.IsUserLinkedAsync(category.Id, category.UserId)).ReturnsAsync(true);
         RepositoryMock.Setup(repository => repository.GetActivitiesByCategoryIdAsync(category.Id)).ReturnsAsync(activities);
 
         var result = await Service.GetActivitiesByCategoryIdAsync(category.Id, category.UserId);
@@ -37,10 +37,11 @@ public class GetActivitiesByCategoryIdAsyncTests : CategoryServiceTestsBase
     public async Task GetActivitiesByCategoryId_CategoryNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        RepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync((Category?)null);
+        var userId = Guid.NewGuid();
+        RepositoryMock.Setup(repository => repository.IsUserLinkedAsync(id, userId)).ReturnsAsync(false);
 
         await FluentActions
-            .Awaiting(() => Service.GetActivitiesByCategoryIdAsync(id, Guid.NewGuid()))
+            .Awaiting(() => Service.GetActivitiesByCategoryIdAsync(id, userId))
             .Should()
             .ThrowAsync<NotFoundException>();
     }

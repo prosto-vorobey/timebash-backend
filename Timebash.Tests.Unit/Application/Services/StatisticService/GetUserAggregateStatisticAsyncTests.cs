@@ -20,7 +20,7 @@ public class GetUserAggregateStatisticAsyncTests : StatisticServiceTestsBase
         var user = new User(userId, Faker.Internet.UserName(), Faker.Internet.Email());
         var expected = new UserAggregateStatisticResponse(expectedTime, expectedStats);
 
-        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(user.Id)).ReturnsAsync(user);
+        UserRepositoryMock.Setup(repository => repository.ExistsAsync(user.Id)).ReturnsAsync(true);
         ActivityQueryServiceMock
             .Setup(service => service.GetActivitiesForUserAsync(user.Id, null, null))
             .Returns(activities.ToAsyncEnumerable());
@@ -28,7 +28,7 @@ public class GetUserAggregateStatisticAsyncTests : StatisticServiceTestsBase
         var result = await Service.GetUserAggregateStatisticAsync(user.Id, null, null);
         result.Should().BeEquivalentTo(expected);
 
-        UserRepositoryMock.Verify(repository => repository.GetByIdAsync(user.Id), Times.Once);
+        UserRepositoryMock.Verify(repository => repository.ExistsAsync(user.Id), Times.Once);
         ActivityQueryServiceMock.Verify(service => service.GetActivitiesForUserAsync(user.Id, null, null), Times.Once);
     }
 
@@ -46,7 +46,7 @@ public class GetUserAggregateStatisticAsyncTests : StatisticServiceTestsBase
         );
         var expected = new UserAggregateStatisticResponse(expectedTime, expectedStats);
 
-        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(user.Id)).ReturnsAsync(user);
+        UserRepositoryMock.Setup(repository => repository.ExistsAsync(user.Id)).ReturnsAsync(true);
         ActivityQueryServiceMock
             .Setup(service => service.GetActivitiesForUserAsync(user.Id, startDate, null))
             .Returns(activities.ToAsyncEnumerable());
@@ -54,7 +54,7 @@ public class GetUserAggregateStatisticAsyncTests : StatisticServiceTestsBase
         var result = await Service.GetUserAggregateStatisticAsync(user.Id, startDate, null);
         result.Should().BeEquivalentTo(expected);
 
-        UserRepositoryMock.Verify(repository => repository.GetByIdAsync(user.Id), Times.Once);
+        UserRepositoryMock.Verify(repository => repository.ExistsAsync(user.Id), Times.Once);
         ActivityQueryServiceMock.Verify(service => service.GetActivitiesForUserAsync(user.Id, startDate, null), Times.Once);
     }
 
@@ -72,7 +72,7 @@ public class GetUserAggregateStatisticAsyncTests : StatisticServiceTestsBase
         );
         var expected = new UserAggregateStatisticResponse(expectedTime, expectedStats);
 
-        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(user.Id)).ReturnsAsync(user);
+        UserRepositoryMock.Setup(repository => repository.ExistsAsync(user.Id)).ReturnsAsync(true);
         ActivityQueryServiceMock
             .Setup(service => service.GetActivitiesForUserAsync(user.Id, null, endDate))
             .Returns(activities.ToAsyncEnumerable());
@@ -80,7 +80,7 @@ public class GetUserAggregateStatisticAsyncTests : StatisticServiceTestsBase
         var result = await Service.GetUserAggregateStatisticAsync(user.Id, null, endDate);
         result.Should().BeEquivalentTo(expected);
 
-        UserRepositoryMock.Verify(repository => repository.GetByIdAsync(user.Id), Times.Once);
+        UserRepositoryMock.Verify(repository => repository.ExistsAsync(user.Id), Times.Once);
         ActivityQueryServiceMock.Verify(service => service.GetActivitiesForUserAsync(user.Id, null, endDate), Times.Once);
     }
 
@@ -100,7 +100,7 @@ public class GetUserAggregateStatisticAsyncTests : StatisticServiceTestsBase
         );
         var expected = new UserAggregateStatisticResponse(expectedTime, expectedStats);
 
-        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(user.Id)).ReturnsAsync(user);
+        UserRepositoryMock.Setup(repository => repository.ExistsAsync(user.Id)).ReturnsAsync(true);
         ActivityQueryServiceMock
             .Setup(service => service.GetActivitiesForUserAsync(user.Id, startDate, endDate))
             .Returns(activities.ToAsyncEnumerable());
@@ -108,7 +108,7 @@ public class GetUserAggregateStatisticAsyncTests : StatisticServiceTestsBase
         var result = await Service.GetUserAggregateStatisticAsync(user.Id, startDate, endDate);
         result.Should().BeEquivalentTo(expected);
 
-        UserRepositoryMock.Verify(repository => repository.GetByIdAsync(user.Id), Times.Once);
+        UserRepositoryMock.Verify(repository => repository.ExistsAsync(user.Id), Times.Once);
         ActivityQueryServiceMock.Verify(service => service.GetActivitiesForUserAsync(user.Id, startDate, endDate), Times.Once);
     }
 
@@ -123,7 +123,7 @@ public class GetUserAggregateStatisticAsyncTests : StatisticServiceTestsBase
     public async Task GetUserAggregateStatistic_UserNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync((User?)null);
+        UserRepositoryMock.Setup(repository => repository.ExistsAsync(id)).ReturnsAsync(false);
 
         await FluentActions
             .Awaiting(() => Service.GetUserAggregateStatisticAsync(id, null, null))

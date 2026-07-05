@@ -19,7 +19,7 @@ public class CategoryService(IUnitOfWork unitOfWork, ICategoryRepository reposit
 
     public async Task<ActivitiesListResponse> GetActivitiesByCategoryIdAsync(Guid id, Guid userId)
     {
-        await EntityAccessGuard.EnsureCategoryAccessAsync(_repository, id, userId);
+        await EntityAccessGuard.ValidateCategoryAccessAsync(_repository, id, userId);
         var activities = await _repository.GetActivitiesByCategoryIdAsync(id);
 
         return new ([.. activities.Select(activity => activity.ToResponse())]);

@@ -23,7 +23,7 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
                 .OrderBy(activity => activity.StartTime)
                 .Select(activity => activity.ToResponse())]);
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
         ActivityRepositoryMock.Setup(repository => repository.GetByJournalIdAsync(journal.Id)).ReturnsAsync(activities);
 
         var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, null, null, journal.UserId);
@@ -48,7 +48,7 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
                 .OrderBy(activity => activity.StartTime)
                 .Select(activity => activity.ToResponse())]);
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
         ActivityRepositoryMock
             .Setup(repository => repository.GetByJournalIdAsync(journal.Id, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
             .ReturnsAsync(activities);
@@ -81,7 +81,7 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
                 .OrderBy(activity => activity.StartTime)
                 .Select(activity => activity.ToResponse())]);
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
         ActivityRepositoryMock
             .Setup(repository => repository.GetByJournalIdAsync(journal.Id, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
             .ReturnsAsync(activities);
@@ -105,10 +105,11 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
     public async Task GetActivitiesByJournalId_JournalNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync((Journal?)null);
+        var userId = Guid.NewGuid();
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(id, userId)).ReturnsAsync(false);
 
         await FluentActions
-            .Awaiting(() => Service.GetActivitiesByJournalIdAsync(id, null, null, Guid.NewGuid()))
+            .Awaiting(() => Service.GetActivitiesByJournalIdAsync(id, null, null, userId))
             .Should()
             .ThrowAsync<NotFoundException>();
     }

@@ -21,13 +21,22 @@ public class GetAsyncTests : MeServiceTestsBase
     }
 
     [Fact]
+    public async Task Get_EmptyId_ShouldThrowBadRequest()
+        => await FluentActions
+            .Awaiting(() => Service.GetAsync(Guid.Empty))
+            .Should()
+            .ThrowAsync<BadRequestException>()
+            .WithMessage("Invalid id");
+
+    [Fact]
     public async Task Get_UserNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
         UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync((User?)null);
 
         await FluentActions
-            .Invoking(() => Service.GetAsync(id))
-            .Should().ThrowAsync<NotFoundException>();
+            .Awaiting(() => Service.GetAsync(id))
+            .Should()
+            .ThrowAsync<NotFoundException>();
     }
 }

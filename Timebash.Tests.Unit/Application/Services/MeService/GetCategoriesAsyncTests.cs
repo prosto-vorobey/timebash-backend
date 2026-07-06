@@ -3,6 +3,7 @@ using Moq;
 using Timebash.Application.Extensions;
 using Timebash.Core.DTOs.Responses;
 using Timebash.Core.Entities;
+using Timebash.Core.Exceptions;
 
 namespace Timebash.Tests.Unit.Application.Services.MeService;
 
@@ -18,9 +19,30 @@ public class GetCategoriesAsyncTests : MeServiceTestsBase
         };
         var expected = new CategoriesListResponse([.. categories.Select(category => category.ToResponse())]);
 
+        UserRepositoryMock.Setup(repository => repository.ExistsAsync(userId)).ReturnsAsync(true);
         CategoryRepositoryMock.Setup(repository => repository.GetByUserIdAsync(userId)).ReturnsAsync(categories);
 
         var result = await Service.GetCategoriesAsync(userId);
         result.Should().BeEquivalentTo(expected);
+    }
+
+    [Fact]
+    public async Task GetCategories_EmptyId_ShouldThrowBadRequest()
+        => await FluentActions
+            .Awaiting(() => Service.GetCategoriesAsync(Guid.Empty))
+            .Should()
+            .ThrowAsync<BadRequestException>()
+            .WithMessage("Invalid id");
+
+    [Fact]
+    public async Task GetCategories_UserNotFound_ShouldThrowNotFound()
+    {
+        var id = Guid.NewGuid();
+        UserRepositoryMock.Setup(repository => repository.ExistsAsync(id)).ReturnsAsync(false);
+
+        await FluentActions
+            .Awaiting(() => Service.GetCategoriesAsync(id))
+            .Should()
+            .ThrowAsync<NotFoundException>();
     }
 }

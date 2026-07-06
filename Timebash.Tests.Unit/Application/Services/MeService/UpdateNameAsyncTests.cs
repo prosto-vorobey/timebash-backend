@@ -66,10 +66,23 @@ public class UpdateNameAsyncTests : MeServiceTestsBase
         UserRepositoryMock.Setup(repository => repository.ExistsByNameAsync(request.Name)).ReturnsAsync(true);
 
         var exception = await FluentActions
-            .Invoking(() => Service.UpdateNameAsync(request, Guid.NewGuid()))
+            .Awaiting(() => Service.UpdateNameAsync(request, Guid.NewGuid()))
             .Should()
             .ThrowAsync<ResourceConflictException>();
         exception.Which.Field.Should().Be("Name");
+    }
+
+    [Fact]
+    public async Task UpdateName_EmptyId_ShouldThrowBadRequest()
+    {
+        var request = new UserNameUpdateRequest(Faker.Internet.UserName());
+        UserRepositoryMock.Setup(repository => repository.ExistsByNameAsync(request.Name)).ReturnsAsync(false);
+
+        await FluentActions
+            .Awaiting(() => Service.UpdateNameAsync(request, Guid.Empty))
+            .Should()
+            .ThrowAsync<BadRequestException>()
+            .WithMessage("Invalid id");
     }
 
     [Fact]
@@ -82,7 +95,8 @@ public class UpdateNameAsyncTests : MeServiceTestsBase
         UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync((User?)null);
 
         await FluentActions
-            .Invoking(() => Service.UpdateNameAsync(request, id))
-            .Should().ThrowAsync<NotFoundException>();
+            .Awaiting(() => Service.UpdateNameAsync(request, id))
+            .Should()
+            .ThrowAsync<NotFoundException>();
     }
 }

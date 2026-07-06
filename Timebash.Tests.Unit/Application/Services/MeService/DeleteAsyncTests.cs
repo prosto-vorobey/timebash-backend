@@ -22,13 +22,22 @@ public class DeleteAsyncTests : MeServiceTestsBase
     }
 
     [Fact]
+    public async Task Delete_EmptyId_ShouldThrowBadRequest()
+        => await FluentActions
+            .Awaiting(() => Service.DeleteAsync(Guid.Empty))
+            .Should()
+            .ThrowAsync<BadRequestException>()
+            .WithMessage("Invalid id");
+
+    [Fact]
     public async Task Delete_UserNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
         UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync((User?)null);
 
         await FluentActions
-            .Invoking(() => Service.DeleteAsync(id))
-            .Should().ThrowAsync<NotFoundException>();
+            .Awaiting(() => Service.DeleteAsync(id))
+            .Should()
+            .ThrowAsync<NotFoundException>();
     }
 }

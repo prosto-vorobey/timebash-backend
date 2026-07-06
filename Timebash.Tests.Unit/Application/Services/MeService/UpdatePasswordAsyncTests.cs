@@ -70,6 +70,14 @@ public class UpdatePasswordAsyncTests : MeServiceTestsBase
     }
 
     [Fact]
+    public async Task UpdatePassword_EmptyId_ShouldThrowBadRequest()
+        => await FluentActions
+            .Awaiting(() => Service.UpdatePasswordAsync(new(Faker.Internet.Password(), Faker.Internet.Password()), Guid.Empty))
+            .Should()
+            .ThrowAsync<BadRequestException>()
+            .WithMessage("Invalid id");
+
+    [Fact]
     public async Task UpdatePassword_UserNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
@@ -78,8 +86,9 @@ public class UpdatePasswordAsyncTests : MeServiceTestsBase
         UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync((User?)null);
 
         await FluentActions
-            .Invoking(() => Service.UpdatePasswordAsync(request, id))
-            .Should().ThrowAsync<NotFoundException>();
+            .Awaiting(() => Service.UpdatePasswordAsync(request, id))
+            .Should()
+            .ThrowAsync<NotFoundException>();
     }
 
     [Fact]
@@ -92,7 +101,8 @@ public class UpdatePasswordAsyncTests : MeServiceTestsBase
         PasswordServiceMock.Setup(service => service.VerifyPassword(user, request.CurrentPassword)).Returns(false);
 
         await FluentActions
-            .Invoking(() => Service.UpdatePasswordAsync(request, user.Id))
-            .Should().ThrowAsync<UnauthorizedException>();
+            .Awaiting(() => Service.UpdatePasswordAsync(request, user.Id))
+            .Should()
+            .ThrowAsync<UnauthorizedException>();
     }
 }

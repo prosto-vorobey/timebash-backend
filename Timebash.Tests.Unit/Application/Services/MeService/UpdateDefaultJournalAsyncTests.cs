@@ -21,9 +21,10 @@ public class UpdateDefaultJournalAsyncTests : MeServiceTestsBase
         var journal = new Journal(journalId, userId, Faker.Lorem.Word());
         var request = new DefaultJournalUpdateRequest(Guid.NewGuid());
 
+        UserRepositoryMock.Setup(repository => repository.ExistsAsync(userId)).ReturnsAsync(true);
         SettingsRepositoryMock.Setup(repository => repository.GetByIdAsync(userId)).ReturnsAsync(userSettings);
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journalId)).ReturnsAsync(journal);
         JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(request.JournalId, userId)).ReturnsAsync(true);
+        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journalId)).ReturnsAsync(journal);
 
         var result = await Service.UpdateDefaultJournalAsync(request, userId);
 
@@ -47,8 +48,9 @@ public class UpdateDefaultJournalAsyncTests : MeServiceTestsBase
         var journal = new Journal(journalId, userId, Faker.Lorem.Word());
         var request = new DefaultJournalUpdateRequest(userSettings.DefaultJournalId);
 
-        SettingsRepositoryMock.Setup(repository => repository.GetByIdAsync(userId)).ReturnsAsync(userSettings);
+        UserRepositoryMock.Setup(repository => repository.ExistsAsync(userId)).ReturnsAsync(true);
         JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(request.JournalId, userId)).ReturnsAsync(true);
+        SettingsRepositoryMock.Setup(repository => repository.GetByIdAsync(userId)).ReturnsAsync(userSettings);
 
         var result = await Service.UpdateDefaultJournalAsync(request, userId);
 
@@ -60,20 +62,56 @@ public class UpdateDefaultJournalAsyncTests : MeServiceTestsBase
     }
 
     [Fact]
+    public async Task UpdateDefaultJournal_EmptyUserId_ShouldThrowBadRequest()
+        => await FluentActions
+            .Awaiting(() => Service.UpdateDefaultJournalAsync(new(Guid.NewGuid()), Guid.Empty))
+            .Should()
+            .ThrowAsync<BadRequestException>()
+            .WithMessage("Invalid id");
+
+    [Fact]
+    public async Task UpdateDefaultJournal_UserNotFound_ShouldThrowNotFound()
+    {
+        var userId = Guid.NewGuid();
+        UserRepositoryMock.Setup(repository => repository.ExistsAsync(userId)).ReturnsAsync(false);
+
+        await FluentActions
+            .Awaiting(() => Service.UpdateDefaultJournalAsync(new(Guid.NewGuid()), userId))
+            .Should()
+            .ThrowAsync<NotFoundException>();
+    }
+
+    [Fact]
+    public async Task UpdateDefaultJournal_EmptyJournalId_ShouldThrowBasRequest()
+    {
+        var userId = Guid.NewGuid();
+        UserRepositoryMock.Setup(repository => repository.ExistsAsync(userId)).ReturnsAsync(true);
+        
+        await FluentActions
+            .Awaiting(() => Service.UpdateDefaultJournalAsync(new(Guid.Empty), userId))
+            .Should()
+            .ThrowAsync<BadRequestException>()
+            .WithMessage("Invalid id");
+    }
+
+    [Fact]
     public async Task UpdateDefaultJournal_JournalNotLinked_ShouldThrowNotFound()
     {
+        var userId = Guid.NewGuid();
         var userSettings = new UserSettings
         {
-            UserId = Guid.NewGuid(),
+            UserId = userId,
             DefaultJournalId = Guid.NewGuid()
         };
         var request = new DefaultJournalUpdateRequest(Guid.NewGuid());
 
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(request.JournalId, userSettings.UserId)).ReturnsAsync(false);
+        UserRepositoryMock.Setup(repository => repository.ExistsAsync(userId)).ReturnsAsync(true);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(request.JournalId, userId)).ReturnsAsync(false);
 
         await FluentActions
-            .Invoking(() => Service.UpdateDefaultJournalAsync(request, userSettings.UserId))
-            .Should().ThrowAsync<NotFoundException>();
+            .Awaiting(() => Service.UpdateDefaultJournalAsync(request, userId))
+            .Should()
+            .ThrowAsync<NotFoundException>();
     }
 
     [Fact]
@@ -82,11 +120,13 @@ public class UpdateDefaultJournalAsyncTests : MeServiceTestsBase
         var userId = Guid.NewGuid();
         var request = new DefaultJournalUpdateRequest(Guid.NewGuid());
         
+        UserRepositoryMock.Setup(repository => repository.ExistsAsync(userId)).ReturnsAsync(true);
         JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(request.JournalId, userId)).ReturnsAsync(true);
         SettingsRepositoryMock.Setup(repository => repository.GetByIdAsync(userId)).ReturnsAsync((UserSettings?)null);
 
         await FluentActions
-            .Invoking(() => Service.UpdateDefaultJournalAsync(request, userId))
-            .Should().ThrowAsync<NotFoundException>();
+            .Awaiting(() => Service.UpdateDefaultJournalAsync(request, userId))
+            .Should()
+            .ThrowAsync<NotFoundException>();
     }
 }

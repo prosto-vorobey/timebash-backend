@@ -3,6 +3,7 @@ using Moq;
 using Timebash.Application.Extensions;
 using Timebash.Core.DTOs.Responses;
 using Timebash.Core.Entities;
+using Timebash.Core.Exceptions;
 
 namespace Timebash.Tests.Unit.Application.Services.MeService;
 
@@ -18,9 +19,30 @@ public class GetJournalsAsyncTests : MeServiceTestsBase
         };
         var expected = new JournalsListResponse([.. journals.Select(journal => journal.ToResponse())]);
 
+        UserRepositoryMock.Setup(repository => repository.ExistsAsync(userId)).ReturnsAsync(true);
         JournalRepositoryMock.Setup(repository => repository.GetByUserIdAsync(userId)).ReturnsAsync(journals);
 
         var result = await Service.GetJournalsAsync(userId);
         result.Should().BeEquivalentTo(expected);
+    }
+
+    [Fact]
+    public async Task GetJournals_EmptyId_ShouldThrowBadRequest()
+        => await FluentActions
+            .Awaiting(() => Service.GetJournalsAsync(Guid.Empty))
+            .Should()
+            .ThrowAsync<BadRequestException>()
+            .WithMessage("Invalid id");
+
+    [Fact]
+    public async Task GetJournals_UserNotFound_ShouldThrowNotFound()
+    {
+        var id = Guid.NewGuid();
+        UserRepositoryMock.Setup(repository => repository.ExistsAsync(id)).ReturnsAsync(false);
+
+        await FluentActions
+            .Awaiting(() => Service.GetJournalsAsync(id))
+            .Should()
+            .ThrowAsync<NotFoundException>();
     }
 }

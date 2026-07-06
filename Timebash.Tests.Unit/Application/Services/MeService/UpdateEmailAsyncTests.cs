@@ -66,10 +66,23 @@ public class UpdateEmailAsyncTests : MeServiceTestsBase
         UserRepositoryMock.Setup(repository => repository.ExistsByEmailAsync(request.Email)).ReturnsAsync(true);
 
         var exception = await FluentActions
-            .Invoking(() => Service.UpdateEmailAsync(request, Guid.NewGuid()))
+            .Awaiting(() => Service.UpdateEmailAsync(request, Guid.NewGuid()))
             .Should()
             .ThrowAsync<ResourceConflictException>();
         exception.Which.Field.Should().Be("Email");
+    }
+
+    [Fact]
+    public async Task UpdateEmail_EmptyId_ShouldThrowBadRequest()
+    {
+        var request = new UserEmailUpdateRequest(Faker.Internet.Email());
+        UserRepositoryMock.Setup(repository => repository.ExistsByEmailAsync(request.Email)).ReturnsAsync(false);
+
+        await FluentActions
+            .Awaiting(() => Service.UpdateEmailAsync(request, Guid.Empty))
+            .Should()
+            .ThrowAsync<BadRequestException>()
+            .WithMessage("Invalid id");
     }
 
     [Fact]
@@ -82,7 +95,7 @@ public class UpdateEmailAsyncTests : MeServiceTestsBase
         UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync((User?)null);
 
         await FluentActions
-            .Invoking(() => Service.UpdateEmailAsync(request, id))
+            .Awaiting(() => Service.UpdateEmailAsync(request, id))
             .Should()
             .ThrowAsync<NotFoundException>();
     }

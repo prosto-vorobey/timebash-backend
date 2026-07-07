@@ -29,7 +29,7 @@ public static class CategoryExtensions
             category.Color = request.Color;
             result = true;
         }
-        if (request.Keywords != null && !request.Keywords.SequenceEqual(category.Keywords))
+        if (request.Keywords != null && !request.Keywords.ToHashSet().SetEquals(category.Keywords))
         {
             category.Keywords = [.. request.Keywords];
             result = true;

@@ -90,7 +90,7 @@ public class AuthServiceTests
         _userRepositoryMock.Setup(repository => repository.ExistsByNameAsync(request.Name)).ReturnsAsync(true);
 
         var exception = await FluentActions
-            .Invoking(() => _service.RegisterAsync(request))
+            .Awaiting(() => _service.RegisterAsync(request))
             .Should()
             .ThrowAsync<ResourceConflictException>();
         exception.Which.Field.Should().Be("Name");
@@ -104,7 +104,7 @@ public class AuthServiceTests
         _userRepositoryMock.Setup(repository => repository.ExistsByEmailAsync(request.Email)).ReturnsAsync(true);
 
         var exception = await FluentActions
-            .Invoking(() => _service.RegisterAsync(request))
+            .Awaiting(() => _service.RegisterAsync(request))
             .Should()
             .ThrowAsync<ResourceConflictException>();
         exception.Which.Field.Should().Be("Email");

@@ -85,7 +85,7 @@ public class CategoryExtensionsTests
     }
 
     [Fact]
-    public void ApplyUpdate_WhenKeywordsNull_ShouldNotUpdateKeywords()
+    public void ApplyUpdate_WhenKeywordsNull_ShouldReturnFalse()
     {
         var id = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -94,7 +94,7 @@ public class CategoryExtensionsTests
         var keywords = _faker.Lorem.Words().ToList();
         var category = new Category(id, userId, name, color)
         {
-            Keywords = keywords  
+            Keywords = keywords
         };
 
         var currentCreatedTime = category.CreatedAt;
@@ -105,6 +105,30 @@ public class CategoryExtensionsTests
 
         result.Should().BeFalse();
         AssertCategoryFields(category, id, userId, name, color, keywords, currentCreatedTime, currentUpdatedTime);
+    }
+
+    [Fact]
+    public void ApplyUpdate_WhenSameKeywordsInDifferentOrder_ShouldReturnFalse()
+    {
+        var id = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var name = _faker.Lorem.Word();
+        var color = "#000000";
+        var keywords = _faker.Lorem.Words().ToList();
+        var category = new Category(id, userId, name, color)
+        {
+            Keywords = keywords
+        };
+
+        var currentCreatedTime = category.CreatedAt;
+        var currentUpdatedTime = category.UpdatedAt;
+        var newKeywords = keywords.OrderByDescending(k => k).ToList();
+        var request = new CategoryRequest(name, color, newKeywords);
+
+        var result = category.ApplyUpdate(request);
+
+        result.Should().BeFalse();
+        AssertCategoryFields(category, id, userId, name, color, newKeywords, currentCreatedTime, currentUpdatedTime);
     }
 
     [Fact]
@@ -142,7 +166,7 @@ public class CategoryExtensionsTests
         category.UserId.Should().Be(userId);
         category.Name.Should().Be(name);
         category.Color.Should().Be(color);
-        category.Keywords.Should().BeEquivalentTo(keywords);
+        category.Keywords.Should().BeEquivalentTo(keywords, options => options.WithoutStrictOrdering());
         category.CreatedAt.Should().Be(createdAt);
         category.UpdatedAt.Should().Be(updatedAt);
     }

@@ -4,19 +4,22 @@ using Timebash.Application.Extensions;
 using Timebash.Core.DTOs.Responses;
 using Timebash.Core.Entities;
 using Timebash.Core.Exceptions;
+using Timebash.Core.Services;
+using Timebash.Tests.Unit.Application.Services.JournalService.TestData;
 
 namespace Timebash.Tests.Unit.Application.Services.JournalService;
 
 public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
 {
     [Fact]
-    public async Task GetActivitiesByJournalId_WithoutDate_ShouldReturnResponse()
+    public async Task GetActivitiesByJournalId_WithoutDateRange_ShouldReturnAllActivities()
     {
         var journal = new Journal(Guid.NewGuid(), Guid.NewGuid(), Faker.Lorem.Word());
         var activities = new List<Activity>
-        {new(Guid.NewGuid(), Guid.NewGuid(), DateTime.MaxValue, DateTime.MaxValue),
+        {
             new(Guid.NewGuid(), Guid.NewGuid(), DateTime.MinValue, DateTime.MaxValue),
-            new(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow, DateTime.MaxValue)
+            new(Guid.NewGuid(), Guid.NewGuid(), new DateTime(2026, 07, 10), DateTime.MaxValue),
+            new(Guid.NewGuid(), Guid.NewGuid(), DateTime.MaxValue, DateTime.MaxValue),
         };
         var expected = new ActivitiesListResponse(
             [.. activities
@@ -29,68 +32,82 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
         var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, null, null, journal.UserId);
 
         result.Should().BeEquivalentTo(expected);
+        ActivityRepositoryMock.Verify(repository => repository.GetByJournalIdAsync(journal.Id), Times.Once);
     }
 
-    [Fact]
-    public async Task GetActivitiesByJournalId_WithDate_ShouldCallRepositoryWithCorrectRange()
+    [Theory]
+    [ClassData(typeof(GetActivitiesWithOnlyStartDateRangeData))]
+    public async Task GetActivitiesByJournalId_WithDate_WithOnlyStartDateRange_ShouldReturnCorrectActivities(
+        Guid journalId, 
+        DateTime start, 
+        List<Activity> expectedActivities)
     {
-        var journal = new Journal(Guid.NewGuid(), Guid.NewGuid(), Faker.Lorem.Word());
-        var date = DateTime.UtcNow;
-        var activities = new List<Activity>
-        {
-            new(Guid.NewGuid(), Guid.NewGuid(), date, DateTime.MaxValue)
-        };
-
-        var expectedStartTime = date;
-        var expectedEndTime = date.AddDays(1);
+        var journal = new Journal(journalId, Guid.NewGuid(), Faker.Lorem.Word());
         var expected = new ActivitiesListResponse(
-            [.. activities
+            [.. expectedActivities
                 .OrderBy(activity => activity.StartTime)
                 .Select(activity => activity.ToResponse())]);
 
         JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
-        ActivityRepositoryMock
-            .Setup(repository => repository.GetByJournalIdAsync(journal.Id, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
-            .ReturnsAsync(activities);
+        ActivityQueryServiceMock.Setup(service => service.GetActivitiesForJournalAsync(journal.Id, start, null, ActivityDateFilterMode.ByStartTime))
+            .Returns(expectedActivities.ToAsyncEnumerable());
 
-        var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, date, null, journal.UserId);
-
+        var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, start, null, journal.UserId);
+        
         result.Should().BeEquivalentTo(expected);
-        ActivityRepositoryMock.Verify(
-            repository => repository.GetByJournalIdAsync(journal.Id, expectedStartTime, expectedEndTime),
+        ActivityQueryServiceMock.Verify(
+            service => service.GetActivitiesForJournalAsync(journal.Id, start, null, ActivityDateFilterMode.ByStartTime), 
             Times.Once);
     }
 
     [Theory]
-    [InlineData(0)]
-    [InlineData(180)]
-    [InlineData(-60)]
-    public async Task GetActivitiesByJournalId_WithOffset_ShouldCallRepositoryWithAdjustedRange(int offsetMinutes)
+    [ClassData(typeof(GetActivitiesWithOnlyEndDateRangeData))]
+    public async Task GetActivitiesByJournalId_WithDate_WithOnlyEndDateRange_ShouldReturnCorrectActivities(
+        Guid journalId, 
+        DateTime end, 
+        List<Activity> expectedActivities)
     {
-        var journal = new Journal(Guid.NewGuid(), Guid.NewGuid(), Faker.Lorem.Word());
-        var date = DateTime.UtcNow;
-        var activities = new List<Activity>
-        {
-            new(Guid.NewGuid(), Guid.NewGuid(), date, DateTime.MaxValue)
-        };
-
-        var expectedStartTime = date.AddMinutes(offsetMinutes);
-        var expectedEndTime = expectedStartTime.AddDays(1);
+        var journal = new Journal(journalId, Guid.NewGuid(), Faker.Lorem.Word());
         var expected = new ActivitiesListResponse(
-            [.. activities
+            [.. expectedActivities
                 .OrderBy(activity => activity.StartTime)
                 .Select(activity => activity.ToResponse())]);
 
         JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
-        ActivityRepositoryMock
-            .Setup(repository => repository.GetByJournalIdAsync(journal.Id, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
-            .ReturnsAsync(activities);
+        ActivityQueryServiceMock.Setup(service => service.GetActivitiesForJournalAsync(journal.Id, null, end, ActivityDateFilterMode.ByStartTime))
+            .Returns(expectedActivities.ToAsyncEnumerable());
 
-        var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, date, offsetMinutes, journal.UserId);
-
+        var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, null, end, journal.UserId);
+        
         result.Should().BeEquivalentTo(expected);
-        ActivityRepositoryMock.Verify(
-            repository => repository.GetByJournalIdAsync(journal.Id, expectedStartTime, expectedEndTime),
+        ActivityQueryServiceMock.Verify(
+            service => service.GetActivitiesForJournalAsync(journal.Id, null, end, ActivityDateFilterMode.ByStartTime), 
+            Times.Once);
+    }
+
+    [Theory]
+    [ClassData(typeof(GetActivitiesWithDateRangeData))]
+    public async Task GetActivitiesByJournalId_WithDate_WithDateRange_ShouldReturnCorrectActivities(
+        Guid journalId, 
+        DateTime start, 
+        DateTime end, 
+        List<Activity> expectedActivities)
+    {
+        var journal = new Journal(journalId, Guid.NewGuid(), Faker.Lorem.Word());
+        var expected = new ActivitiesListResponse(
+            [.. expectedActivities
+                .OrderBy(activity => activity.StartTime)
+                .Select(activity => activity.ToResponse())]);
+
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
+        ActivityQueryServiceMock.Setup(service => service.GetActivitiesForJournalAsync(journal.Id, start, end, ActivityDateFilterMode.ByStartTime))
+            .Returns(expectedActivities.ToAsyncEnumerable());
+
+        var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, start, end, journal.UserId);
+        
+        result.Should().BeEquivalentTo(expected);
+        ActivityQueryServiceMock.Verify(
+            service => service.GetActivitiesForJournalAsync(journal.Id, start, end, ActivityDateFilterMode.ByStartTime), 
             Times.Once);
     }
 

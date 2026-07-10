@@ -16,22 +16,25 @@ public class JournalService(
     IUnitOfWork unitOfWork,
     IJournalRepository journalRepository,
     IActivityRepository activityRepository,
-    IUserSettingsRepository userSettingsRepository) : IJournalService
+    IUserSettingsRepository userSettingsRepository,
+    IActivityQueryService queryService) : IJournalService
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IJournalRepository _journalRepository = journalRepository;
     private readonly IActivityRepository _activityRepository = activityRepository;
     private readonly IUserSettingsRepository _userSettingsRepository = userSettingsRepository;
+    private readonly IActivityQueryService _queryService = queryService;
 
     public async Task<JournalResponse> GetByIdAsync(Guid id, Guid userId)
         => (await EntityAccessGuard.EnsureJournalAccessAsync(_journalRepository, id, userId)).ToResponse();
 
-    public async Task<ActivitiesListResponse> GetActivitiesByJournalIdAsync(Guid id, DateTime? date, int? offsetMinutes, Guid userId)
+    public async Task<ActivitiesListResponse> GetActivitiesByJournalIdAsync(Guid id, DateTime? start, DateTime? end, Guid userId)
     {
         await EntityAccessGuard.ValidateJournalAccessAsync(_journalRepository, id, userId);
-        var activities = date is null
+
+        var activities = start is null && end is null
             ? await _activityRepository.GetByJournalIdAsync(id)
-            : await GetByJournalIdAsync(id, date.Value, offsetMinutes);
+            : await queryService.GetActivitiesForJournalAsync(id, start, end, ActivityDateFilterMode.ByStartTime).ToListAsync();
 
         return new ActivitiesListResponse(
             [.. activities
@@ -176,19 +179,5 @@ public class JournalService(
         }
 
         return new (conflictCorrections);
-    }
-
-    private static (DateTime startUtc, DateTime endUtc) GetDayRange(DateTime date, int? offsetMinutes)
-    {
-        var startUtc = DateTime.SpecifyKind(
-            offsetMinutes is null ? date : date.AddMinutes(offsetMinutes.Value),
-            DateTimeKind.Utc);
-        return (startUtc, startUtc.AddDays(1));
-    }
-
-    private async Task<IEnumerable<Activity>> GetByJournalIdAsync(Guid id, DateTime date, int? offsetMinutes)
-    {
-        var (startUtc, endUnc) = GetDayRange(date, offsetMinutes);
-        return await _activityRepository.GetByJournalIdAsync(id, startUtc, endUnc);
     }
 }

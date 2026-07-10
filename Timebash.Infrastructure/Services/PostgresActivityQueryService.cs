@@ -12,18 +12,23 @@ public class PostgresActivityQueryService(TimebashDbContext context) : IActivity
         var result = _context.Activities
             .Where(activity => activity.Journal.UserId == userId);
         
-        result = FilterByDateRange(result, start, end);
+        result = FilterByDateRangeWithOverlap(result, start, end);
         result = ApplyIncludes(result);
         
         return result.AsNoTracking().AsAsyncEnumerable();
     }
 
-    public IAsyncEnumerable<Activity> GetActivitiesForJournalAsync(Guid journalId, DateTime? start, DateTime? end)
+    public IAsyncEnumerable<Activity> GetActivitiesForJournalAsync(Guid journalId, DateTime? start, DateTime? end, ActivityDateFilterMode filterMode)
     {
         var result = _context.Activities
             .Where(activity => activity.JournalId == journalId);
 
-        result = FilterByDateRange(result, start, end);
+        result = filterMode switch
+        {
+            ActivityDateFilterMode.Overlap => FilterByDateRangeWithOverlap(result, start, end),
+            ActivityDateFilterMode.ByStartTime => FilterByDateRangeByStartTime(result, start, end),
+            _ => throw new ArgumentOutOfRangeException(nameof(filterMode), filterMode, "Unknown filter mode.")
+        };
         result = ApplyIncludes(result);
 
         return result.AsNoTracking().AsAsyncEnumerable();
@@ -35,7 +40,7 @@ public class PostgresActivityQueryService(TimebashDbContext context) : IActivity
             .Where(pair => pair.CategoryId == categoryId)
             .Select(pair => pair.Activity);
 
-        result = FilterByDateRange(result, start, end);
+        result = FilterByDateRangeWithOverlap(result, start, end);
 
         return result.AsNoTracking().AsAsyncEnumerable();
     }
@@ -45,13 +50,24 @@ public class PostgresActivityQueryService(TimebashDbContext context) : IActivity
             .Include(a => a.ActivityCategories)
                 .ThenInclude(ac => ac.Category);
 
-    private static IQueryable<Activity> FilterByDateRange(IQueryable<Activity> query, DateTime? start, DateTime? end)
+    private static IQueryable<Activity> FilterByDateRangeWithOverlap(IQueryable<Activity> query, DateTime? start, DateTime? end)
     {
         var result = query;
         if (start.HasValue)
             result = result.Where(activity => activity.EndTime > start.Value);
         if (end.HasValue)
             result = result.Where(activity => activity.StartTime < end.Value);
+
+        return result;
+    }
+
+    private static IQueryable<Activity> FilterByDateRangeByStartTime(IQueryable<Activity> query, DateTime? start, DateTime? end)
+    {
+        var result = query;
+        if (start.HasValue)
+            result = result.Where(activity => activity.StartTime >= start.Value);
+        if (end.HasValue)
+            result = result.Where(activity => activity.StartTime <= end.Value);
 
         return result;
     }

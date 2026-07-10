@@ -29,7 +29,10 @@ public class StatisticService(
     {
         await EntityAccessGuard.ValidateJournalAccessAsync(_journalRepository, journalId, userId);
 
-        var (totalTime, statItems) = await AggregateCategoryStatisticAsync(_queryService.GetActivitiesForJournalAsync(journalId, start, end), start, end);
+        var (totalTime, statItems) = await AggregateCategoryStatisticAsync(
+            _queryService.GetActivitiesForJournalAsync(journalId, start, end, ActivityDateFilterMode.Overlap), 
+            start, 
+            end);
 
         return new JournalAggregateStatisticResponse(totalTime, statItems);
     }

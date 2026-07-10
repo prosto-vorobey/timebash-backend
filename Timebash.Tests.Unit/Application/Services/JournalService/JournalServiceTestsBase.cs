@@ -2,6 +2,7 @@ using Bogus;
 using Moq;
 using Timebash.Core.Contracts;
 using Timebash.Core.Repositories;
+using Timebash.Core.Services;
 using Service = Timebash.Application.Services.JournalService;
 
 namespace Timebash.Tests.Unit.Application.Services.JournalService;
@@ -14,12 +15,14 @@ public abstract class JournalServiceTestsBase
         JournalRepositoryMock = new();
         ActivityRepositoryMock = new();
         SettingsRepositoryMock = new();
+        ActivityQueryServiceMock = new();
 
         Service = new(
             UnitOfWorkMock.Object,
             JournalRepositoryMock.Object,
             ActivityRepositoryMock.Object,
-            SettingsRepositoryMock.Object
+            SettingsRepositoryMock.Object,
+            ActivityQueryServiceMock.Object
         );
     }
 
@@ -29,4 +32,5 @@ public abstract class JournalServiceTestsBase
     protected Mock<IJournalRepository> JournalRepositoryMock { get; }
     protected Mock<IActivityRepository> ActivityRepositoryMock { get; }
     protected Mock<IUserSettingsRepository> SettingsRepositoryMock { get; }
+    protected Mock<IActivityQueryService> ActivityQueryServiceMock { get; }
 }

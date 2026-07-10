@@ -34,17 +34,15 @@ public class JournalsController(ICurrentUserService currentUserService, IJournal
     /// Returns all activities that belong to the specified journal.
     /// </summary>
     /// <param name="id">The journal ID.</param>
-    /// <param name="date">
-    /// Optional date (UTC) to filter activities. If <c>null</c>, all activities are returned.
-    /// If provided, only activities that occurred on that specific day (in the timezone specified by <paramref name="offsetMinutes"/>) are included.
+    /// <param name="start">
+    /// Optional start of the time range (UTC). If <c>null</c>, activities from the earliest available moment are included.
     /// </param>
-    /// <param name="offsetMinutes">
-    /// Optional timezone offset in minutes. If <c>null</c>, UTC (0) is used.
-    /// This offset is applied to <paramref name="date"/> to determine the start and end of the day in the user's local time.
+    /// <param name="end">
+    /// Optional end of the time range (UTC). If <c>null</c>, activities up to the latest available moment are included.
     /// </param>
     /// <returns>A collection of activities linked to the journal.</returns>
     /// <response code="200">Activities were successfully retrieved.</response>
-    /// <response code="400">The provided ID or time is invalid.</response>
+    /// <response code="400">The provided ID or time range is invalid.</response>
     /// <response code="401">Authentication is required.</response>
     /// <response code="404">The journal was not found.</response>
     /// <response code="500">Internal server error. Check logs for details.</response>
@@ -53,8 +51,8 @@ public class JournalsController(ICurrentUserService currentUserService, IJournal
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ActivitiesListResponse>> GetActivitiesByJournalId(Guid id,
-        [FromQuery] DateTime? date = null, [FromQuery] int? offsetMinutes = null)
-        => Ok(await _journalService.GetActivitiesByJournalIdAsync(id, date, offsetMinutes, _currentUserService.GetCurrentUserId()));
+        [FromQuery] DateTime? start = null, [FromQuery] DateTime? end = null)
+        => Ok(await _journalService.GetActivitiesByJournalIdAsync(id, start, end, _currentUserService.GetCurrentUserId()));
 
     /// <summary>
     /// Creates a new journal.

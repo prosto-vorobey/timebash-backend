@@ -22,10 +22,12 @@ public interface IActivityQueryService
     /// <param name="journalId">The journal ID.</param>
     /// <param name="start">Optional start date (UTC). If <c>null</c>, activities from the journal's earliest record are included.</param>
     /// <param name="end">Optional end date (UTC). If <c>null</c>, activities up to the journal's latest record are included.</param>
+    /// <param name="filterMode">Specifies how activities are filtered by date range.</param>
     /// <returns>
     /// An asynchronous stream of <see cref="Activity"/> objects with their associated categories populated.
     /// </returns>
-    public IAsyncEnumerable<Activity> GetActivitiesForJournalAsync(Guid journalId, DateTime? start, DateTime? end);
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="filterMode"/> is not a valid enum value.</exception>
+    public IAsyncEnumerable<Activity> GetActivitiesForJournalAsync(Guid journalId, DateTime? start, DateTime? end, ActivityDateFilterMode filterMode);
 
     /// <summary>
     /// Returns a stream of all activities that belong to a specific category, optionally filtered by date range.

@@ -45,7 +45,7 @@ public class ActivityService(
             _activityRepository.AddCategoriesToActivity(activity.Id, clearedCategoryIds);
         }
 
-        journal.UpdatedAt = DateTime.Now;
+        journal.UpdatedAt = DateTime.UtcNow;
         await _unitOfWork.SaveChangesAsync();
 
         return activity.ToResponse();
@@ -126,7 +126,7 @@ public class ActivityService(
             }
         }
 
-        journal.UpdatedAt = DateTime.Now;
+        journal.UpdatedAt = DateTime.UtcNow;
         await _unitOfWork.SaveChangesAsync();
 
         return new ActivityWithCorrectionResponse(newActivity.ToResponse(), additionalActivities.Select(activity => activity.ToResponse()));
@@ -189,7 +189,7 @@ public class ActivityService(
         var journal = await _journalRepository.GetByIdAsync(activity.JournalId) ?? throw new NotFoundException();
 
         _activityRepository.Delete(activity);
-        journal.UpdatedAt = DateTime.Now;
+        journal.UpdatedAt = DateTime.UtcNow;
         await _unitOfWork.SaveChangesAsync();
     }
 

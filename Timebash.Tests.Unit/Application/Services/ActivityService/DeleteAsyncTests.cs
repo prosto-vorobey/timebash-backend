@@ -16,6 +16,7 @@ public class DeleteAsyncTests : ActivityServiceTestsBase
         var currentJournalUpdatedTime = journal.UpdatedAt;
 
         ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id)).ReturnsAsync(activity);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId)).ReturnsAsync(true);
         JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.JournalId)).ReturnsAsync(journal);
 
         await Service.DeleteAsync(activity.Id, userId);
@@ -46,11 +47,28 @@ public class DeleteAsyncTests : ActivityServiceTestsBase
     }
 
     [Fact]
+    public async Task Delete_JournalNotLinkedToUser_ShouldThrowNotFound()
+    {
+        var journalId = Guid.NewGuid();
+        var activity = new Activity(Guid.NewGuid(), journalId, DateTime.MinValue, DateTime.MaxValue);
+
+        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id)).ReturnsAsync(activity);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journalId, Guid.NewGuid())).ReturnsAsync(false);
+        
+        await FluentActions
+            .Awaiting(() => Service.DeleteAsync(activity.Id, Guid.NewGuid()))
+            .Should()
+            .ThrowAsync<NotFoundException>();
+    }
+
+    [Fact]
     public async Task Delete_JournalNotFound_ShouldThrowNotFound()
     {
         var journalId = Guid.NewGuid();
         var activity = new Activity(Guid.NewGuid(), journalId, DateTime.MinValue, DateTime.MaxValue);
+
         ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id)).ReturnsAsync(activity);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journalId, Guid.NewGuid())).ReturnsAsync(true);
         JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journalId)).ReturnsAsync((Journal?)null);
 
         await FluentActions

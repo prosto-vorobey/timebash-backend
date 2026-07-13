@@ -183,9 +183,7 @@ public class ActivityService(
 
     public async Task DeleteAsync(Guid id, Guid userId)
     {
-        if (id == Guid.Empty) throw new BadRequestException("Invalid id");
-
-        var activity = await _activityRepository.GetByIdAsync(id) ?? throw new NotFoundException();
+        var activity = await EntityAccessGuard.EnsureActivityAccessAsync(_activityRepository, _journalRepository, id, userId);
         var journal = await _journalRepository.GetByIdAsync(activity.JournalId) ?? throw new NotFoundException();
 
         _activityRepository.Delete(activity);

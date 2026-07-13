@@ -34,7 +34,7 @@ public class JournalService(
 
         var activities = start is null && end is null
             ? await _activityRepository.GetByJournalIdAsync(id)
-            : await queryService.GetActivitiesForJournalAsync(id, start, end, ActivityDateFilterMode.ByStartTime).ToListAsync();
+            : await _queryService.GetActivitiesForJournalAsync(id, start, end, ActivityDateFilterMode.ByStartTime).ToListAsync();
 
         return new ActivitiesListResponse(
             [.. activities

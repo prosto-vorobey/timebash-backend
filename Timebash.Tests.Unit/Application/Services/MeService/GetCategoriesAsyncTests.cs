@@ -19,17 +19,17 @@ public class GetCategoriesAsyncTests : MeServiceTestsBase
         };
         var expected = new CategoriesListResponse([.. categories.Select(category => category.ToResponse())]);
 
-        UserRepositoryMock.Setup(repository => repository.ExistsAsync(userId)).ReturnsAsync(true);
-        CategoryRepositoryMock.Setup(repository => repository.GetByUserIdAsync(userId)).ReturnsAsync(categories);
+        UserRepositoryMock.Setup(repository => repository.ExistsAsync(userId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        CategoryRepositoryMock.Setup(repository => repository.GetByUserIdAsync(userId, It.IsAny<CancellationToken>())).ReturnsAsync(categories);
 
-        var result = await Service.GetCategoriesAsync(userId);
+        var result = await Service.GetCategoriesAsync(userId, CancellationToken.None);
         result.Should().BeEquivalentTo(expected);
     }
 
     [Fact]
     public async Task GetCategories_EmptyId_ShouldThrowBadRequest()
         => await FluentActions
-            .Awaiting(() => Service.GetCategoriesAsync(Guid.Empty))
+            .Awaiting(() => Service.GetCategoriesAsync(Guid.Empty, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>()
             .WithMessage("Invalid id");
@@ -38,10 +38,10 @@ public class GetCategoriesAsyncTests : MeServiceTestsBase
     public async Task GetCategories_UserNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        UserRepositoryMock.Setup(repository => repository.ExistsAsync(id)).ReturnsAsync(false);
+        UserRepositoryMock.Setup(repository => repository.ExistsAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
         await FluentActions
-            .Awaiting(() => Service.GetCategoriesAsync(id))
+            .Awaiting(() => Service.GetCategoriesAsync(id, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
     }

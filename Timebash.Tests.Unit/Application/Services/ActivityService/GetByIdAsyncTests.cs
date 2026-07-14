@@ -15,10 +15,12 @@ public class GetByIdAsyncTests : ActivityServiceTestsBase
         var userId = Guid.NewGuid();
         var expected = activity.ToResponse();
 
-        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id)).ReturnsAsync(activity);
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId)).ReturnsAsync(true);
+        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id, It.IsAny<CancellationToken>())).ReturnsAsync(activity);
+        JournalRepositoryMock
+            .Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
 
-        var result = await Service.GetByIdAsync(activity.Id, userId);
+        var result = await Service.GetByIdAsync(activity.Id, userId, CancellationToken.None);
 
         result.Should().BeEquivalentTo(expected);
     }
@@ -26,7 +28,7 @@ public class GetByIdAsyncTests : ActivityServiceTestsBase
     [Fact]
     public async Task GetById_EmptyId_ShouldThrowBadRequest()
         => await FluentActions
-            .Awaiting(() => Service.GetByIdAsync(Guid.Empty, Guid.NewGuid()))
+            .Awaiting(() => Service.GetByIdAsync(Guid.Empty, Guid.NewGuid(), CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
 
@@ -34,10 +36,10 @@ public class GetByIdAsyncTests : ActivityServiceTestsBase
     public async Task GetById_ActivityNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync((Activity?)null);
+        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((Activity?)null);
 
         await FluentActions
-            .Awaiting(() => Service.GetByIdAsync(id, Guid.NewGuid()))
+            .Awaiting(() => Service.GetByIdAsync(id, Guid.NewGuid(), CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
     }

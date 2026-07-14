@@ -18,7 +18,7 @@ public class CreateAsyncTests : CategoryServiceTestsBase
         var capturedCategories = new List<Category>();
         RepositoryMock.Setup(repository => repository.Add(It.IsAny<Category>())).Callback<Category>(capturedCategories.Add);
 
-        var result = await Service.CreateAsync(request, userId);
+        var result = await Service.CreateAsync(request, userId, CancellationToken.None);
 
         capturedCategories.Should().HaveCount(1);
 
@@ -31,6 +31,6 @@ public class CreateAsyncTests : CategoryServiceTestsBase
                 .Excluding(category => category.UpdatedAt));
 
         result.Should().BeEquivalentTo(capturedCategory.ToResponse());
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(), Times.Once);
+        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 }

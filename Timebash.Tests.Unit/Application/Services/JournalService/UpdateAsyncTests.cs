@@ -19,9 +19,9 @@ public class UpdateAsyncTests : JournalServiceTestsBase
         var expected = new Journal(journal.Id, journal.UserId, journal.Name);
         expected.ApplyUpdate(request);
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
 
-        var result = await Service.UpdateAsync(journal.Id, request, journal.UserId);
+        var result = await Service.UpdateAsync(journal.Id, request, journal.UserId, CancellationToken.None);
 
         result.Should().BeTrue();
         journal.UpdatedAt.Should().BeAfter(currentUpdatedTime);
@@ -31,7 +31,7 @@ public class UpdateAsyncTests : JournalServiceTestsBase
                 .Excluding(journal => journal.CreatedAt)
                 .Excluding(journal => journal.UpdatedAt));
 
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(), Times.Once);
+        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -43,9 +43,9 @@ public class UpdateAsyncTests : JournalServiceTestsBase
         var currentUpdateTime = journal.UpdatedAt;
         var expected = new Journal(journal.Id, journal.UserId, journal.Name);
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
 
-        var result = await Service.UpdateAsync(journal.Id, request, journal.UserId);
+        var result = await Service.UpdateAsync(journal.Id, request, journal.UserId, CancellationToken.None);
 
         result.Should().BeFalse();
         journal.UpdatedAt.Should().Be(currentUpdateTime);
@@ -55,13 +55,13 @@ public class UpdateAsyncTests : JournalServiceTestsBase
                 .Excluding(journal => journal.CreatedAt)
                 .Excluding(journal => journal.UpdatedAt));
 
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(), Times.Never);
+        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
     public async Task Update_EmptyId_ShouldThrowBadRequest()
         => await FluentActions
-            .Awaiting(() => Service.UpdateAsync(Guid.Empty, new JournalRequest(Faker.Lorem.Word()), Guid.NewGuid()))
+            .Awaiting(() => Service.UpdateAsync(Guid.Empty, new JournalRequest(Faker.Lorem.Word()), Guid.NewGuid(), CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
 
@@ -69,10 +69,10 @@ public class UpdateAsyncTests : JournalServiceTestsBase
     public async Task Update_JournalNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync((Journal?)null);
+        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((Journal?)null);
 
         await FluentActions
-            .Awaiting(() => Service.UpdateAsync(id, new JournalRequest(Faker.Lorem.Word()), Guid.NewGuid()))
+            .Awaiting(() => Service.UpdateAsync(id, new JournalRequest(Faker.Lorem.Word()), Guid.NewGuid(), CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
     }

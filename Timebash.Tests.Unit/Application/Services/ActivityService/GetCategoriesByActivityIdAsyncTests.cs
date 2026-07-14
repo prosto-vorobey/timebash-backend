@@ -20,10 +20,14 @@ public class GetCategoriesByActivityIdAsyncTests : ActivityServiceTestsBase
         };
         var expected = new CategoriesListResponse([.. categories.Select(category => category.ToResponse())]);
 
-        ActivityRepositoryMock.Setup(repository => repository.IsOwnedByUserAsync(activity.Id, userId)).ReturnsAsync(true);
-        ActivityRepositoryMock.Setup(repository => repository.GetCategoriesByActivityIdAsync(activity.Id)).ReturnsAsync(categories);
+        ActivityRepositoryMock
+            .Setup(repository => repository.IsOwnedByUserAsync(activity.Id, userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        ActivityRepositoryMock
+            .Setup(repository => repository.GetCategoriesByActivityIdAsync(activity.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(categories);
 
-        var result = await Service.GetCategoriesByActivityIdAsync(activity.Id, userId);
+        var result = await Service.GetCategoriesByActivityIdAsync(activity.Id, userId, CancellationToken.None);
 
         result.Should().BeEquivalentTo(expected, options => options.WithoutStrictOrdering());
     }
@@ -31,7 +35,7 @@ public class GetCategoriesByActivityIdAsyncTests : ActivityServiceTestsBase
     [Fact]
     public async Task GetCategoriesByActivityId_EmptyId_ShouldThrowBadRequest()
         => await FluentActions
-            .Awaiting(() => Service.GetCategoriesByActivityIdAsync(Guid.Empty, Guid.NewGuid()))
+            .Awaiting(() => Service.GetCategoriesByActivityIdAsync(Guid.Empty, Guid.NewGuid(), CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
 
@@ -40,10 +44,10 @@ public class GetCategoriesByActivityIdAsyncTests : ActivityServiceTestsBase
     {
         var id = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        ActivityRepositoryMock.Setup(repository => repository.IsOwnedByUserAsync(id, userId)).ReturnsAsync(false);
+        ActivityRepositoryMock.Setup(repository => repository.IsOwnedByUserAsync(id, userId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
         await FluentActions
-            .Awaiting(() => Service.GetCategoriesByActivityIdAsync(id, userId))
+            .Awaiting(() => Service.GetCategoriesByActivityIdAsync(id, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
     }

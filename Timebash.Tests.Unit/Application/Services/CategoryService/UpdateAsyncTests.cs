@@ -25,9 +25,9 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
         };
         expected.ApplyUpdate(request);
 
-        RepositoryMock.Setup(repository => repository.GetByIdAsync(category.Id)).ReturnsAsync(category);
+        RepositoryMock.Setup(repository => repository.GetByIdAsync(category.Id, It.IsAny<CancellationToken>())).ReturnsAsync(category);
 
-        var result = await Service.UpdateAsync(category.Id, request, category.UserId);
+        var result = await Service.UpdateAsync(category.Id, request, category.UserId, CancellationToken.None);
 
         result.Should().BeTrue();
         category.UpdatedAt.Should().BeAfter(currentUpdatedTime);
@@ -37,7 +37,7 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
                 .Excluding(category => category.UpdatedAt)
                 .Excluding(category => category.CreatedAt));
 
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(), Times.Once);
+        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -55,9 +55,9 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
             Keywords = category.Keywords
         };
 
-        RepositoryMock.Setup(repository => repository.GetByIdAsync(category.Id)).ReturnsAsync(category);
+        RepositoryMock.Setup(repository => repository.GetByIdAsync(category.Id, It.IsAny<CancellationToken>())).ReturnsAsync(category);
 
-        var result = await Service.UpdateAsync(category.Id, request, category.UserId);
+        var result = await Service.UpdateAsync(category.Id, request, category.UserId, CancellationToken.None);
 
         result.Should().BeFalse();
         category.UpdatedAt.Should().Be(currentUpdateTime);
@@ -67,7 +67,7 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
                 .Excluding(category => category.UpdatedAt)
                 .Excluding(category => category.CreatedAt));
 
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(), Times.Never);
+        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -85,9 +85,9 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
             Keywords = [.. category.Keywords.Shuffle()]
         };
 
-        RepositoryMock.Setup(repository => repository.GetByIdAsync(category.Id)).ReturnsAsync(category);
+        RepositoryMock.Setup(repository => repository.GetByIdAsync(category.Id, It.IsAny<CancellationToken>())).ReturnsAsync(category);
 
-        var result = await Service.UpdateAsync(category.Id, request, category.UserId);
+        var result = await Service.UpdateAsync(category.Id, request, category.UserId, CancellationToken.None);
 
         result.Should().BeFalse();
         category.UpdatedAt.Should().Be(currentUpdateTime);
@@ -97,13 +97,15 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
                 .Excluding(category => category.UpdatedAt)
                 .Excluding(category => category.CreatedAt));
 
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(), Times.Never);
+        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
     public async Task Update_EmptyId_ShouldThrowBadRequest()
         => await FluentActions
-            .Awaiting(() => Service.UpdateAsync(Guid.Empty, new CategoryRequest(Faker.Lorem.Word(), "#000000", []), Guid.NewGuid()))
+            .Awaiting(() => Service.UpdateAsync(
+                Guid.Empty, 
+                new CategoryRequest(Faker.Lorem.Word(), "#000000", []), Guid.NewGuid(), CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
 
@@ -111,10 +113,12 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
     public async Task Update_CategoryNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        RepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync((Category?)null);
+        RepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((Category?)null);
 
         await FluentActions
-            .Awaiting(() => Service.UpdateAsync(id, new CategoryRequest(Faker.Lorem.Word(), "#000000", []), Guid.NewGuid()))
+            .Awaiting(() => Service.UpdateAsync(
+                id, 
+                new CategoryRequest(Faker.Lorem.Word(), "#000000", []), Guid.NewGuid(), CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
     }

@@ -14,16 +14,16 @@ public class GetByIdAsyncTests : JournalServiceTestsBase
         var journal = new Journal(Guid.NewGuid(), Guid.NewGuid(), Faker.Lorem.Word());
         var expected = journal.ToResponse();
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
 
-        var result = await Service.GetByIdAsync(journal.Id, journal.UserId);
+        var result = await Service.GetByIdAsync(journal.Id, journal.UserId, CancellationToken.None);
         result.Should().BeEquivalentTo(expected);
     }
 
     [Fact]
     public async Task GetById_EmptyId_ShouldThrowBadRequest()
         => await FluentActions
-            .Awaiting(() => Service.GetByIdAsync(Guid.Empty, Guid.NewGuid()))
+            .Awaiting(() => Service.GetByIdAsync(Guid.Empty, Guid.NewGuid(), CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
 
@@ -31,10 +31,10 @@ public class GetByIdAsyncTests : JournalServiceTestsBase
     public async Task GetById_JournalNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync((Journal?)null);
+        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((Journal?)null);
 
         await FluentActions
-            .Awaiting(() => Service.GetByIdAsync(id, Guid.NewGuid()))
+            .Awaiting(() => Service.GetByIdAsync(id, Guid.NewGuid(), CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
     }

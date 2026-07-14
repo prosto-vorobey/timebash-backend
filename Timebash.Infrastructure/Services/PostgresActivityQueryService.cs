@@ -9,8 +9,7 @@ public class PostgresActivityQueryService(TimebashDbContext context) : IActivity
 
     public IAsyncEnumerable<Activity> GetActivitiesForUserAsync(Guid userId, DateTime? start, DateTime? end)
     {
-        var result = _context.Activities
-            .Where(activity => activity.Journal.UserId == userId);
+        var result = _context.Activities.Where(activity => activity.Journal.UserId == userId);
         
         result = FilterByDateRangeWithOverlap(result, start, end);
         result = ApplyIncludes(result);
@@ -20,8 +19,7 @@ public class PostgresActivityQueryService(TimebashDbContext context) : IActivity
 
     public IAsyncEnumerable<Activity> GetActivitiesForJournalAsync(Guid journalId, DateTime? start, DateTime? end, ActivityDateFilterMode filterMode)
     {
-        var result = _context.Activities
-            .Where(activity => activity.JournalId == journalId);
+        var result = _context.Activities.Where(activity => activity.JournalId == journalId);
 
         result = filterMode switch
         {

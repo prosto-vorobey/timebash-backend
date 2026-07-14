@@ -13,7 +13,7 @@ public class TimebashDbContext(DbContextOptions<TimebashDbContext> options) : Db
 
     public DbSet<ActivityCategory> ActivityCategories { get; private set; }
 
-    public Task SaveChangesAsync() => base.SaveChangesAsync();
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken) => base.SaveChangesAsync(cancellationToken);
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

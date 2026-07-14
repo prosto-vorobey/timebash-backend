@@ -20,11 +20,11 @@ public class UpdatePasswordAsyncTests : MeServiceTestsBase
         var newPasswordHash = Faker.Random.Hash();
         var request = new PasswordUpdateRequest(currentPassword, Faker.Internet.Password());
 
-        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync(user);
+        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(user);
         PasswordServiceMock.Setup(service => service.VerifyPassword(user, request.CurrentPassword)).Returns(true);
         PasswordServiceMock.Setup(service => service.HashPassword(user, request.NewPassword)).Returns(newPasswordHash);
 
-        var result = await Service.UpdatePasswordAsync(request, id);
+        var result = await Service.UpdatePasswordAsync(request, id, CancellationToken.None);
 
         result.Should().BeTrue();
         user.PasswordHash.Should().Be(newPasswordHash);
@@ -34,7 +34,7 @@ public class UpdatePasswordAsyncTests : MeServiceTestsBase
         user.CreatedAt.Should().Be(currentCreatedTime);
 
         PasswordServiceMock.Verify(service => service.HashPassword(user, request.NewPassword), Times.Once);
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(), Times.Once);        
+        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);        
     }
 
     [Fact]
@@ -53,10 +53,10 @@ public class UpdatePasswordAsyncTests : MeServiceTestsBase
         var currentCreatedTime = user.CreatedAt;
         var request = new PasswordUpdateRequest(currentPassword, currentPassword);
 
-        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync(user);
+        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(user);
         PasswordServiceMock.Setup(service => service.VerifyPassword(user, request.CurrentPassword)).Returns(true);
 
-        var result = await Service.UpdatePasswordAsync(request, id);
+        var result = await Service.UpdatePasswordAsync(request, id, CancellationToken.None);
 
         result.Should().BeFalse();
         user.Id.Should().Be(id);
@@ -66,13 +66,16 @@ public class UpdatePasswordAsyncTests : MeServiceTestsBase
         user.CreatedAt.Should().Be(currentCreatedTime);
 
         PasswordServiceMock.Verify(service => service.HashPassword(It.IsAny<User>(), It.IsAny<string>()), Times.Never);
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(), Times.Never);
+        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
     public async Task UpdatePassword_EmptyId_ShouldThrowBadRequest()
         => await FluentActions
-            .Awaiting(() => Service.UpdatePasswordAsync(new(Faker.Internet.Password(), Faker.Internet.Password()), Guid.Empty))
+            .Awaiting(() => Service.UpdatePasswordAsync(
+                new(Faker.Internet.Password(), Faker.Internet.Password()), 
+                Guid.Empty, 
+                CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>()
             .WithMessage("Invalid id");
@@ -83,10 +86,10 @@ public class UpdatePasswordAsyncTests : MeServiceTestsBase
         var id = Guid.NewGuid();
         var request = new PasswordUpdateRequest(Faker.Internet.Password(), Faker.Internet.Password());
 
-        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync((User?)null);
+        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
 
         await FluentActions
-            .Awaiting(() => Service.UpdatePasswordAsync(request, id))
+            .Awaiting(() => Service.UpdatePasswordAsync(request, id, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
     }
@@ -97,11 +100,11 @@ public class UpdatePasswordAsyncTests : MeServiceTestsBase
         var user = new User(Guid.NewGuid(), Faker.Internet.UserName(), Faker.Internet.Email());
         var request = new PasswordUpdateRequest(Faker.Internet.Password(), Faker.Internet.Password());
 
-        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(user.Id)).ReturnsAsync(user);
+        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(user);
         PasswordServiceMock.Setup(service => service.VerifyPassword(user, request.CurrentPassword)).Returns(false);
 
         await FluentActions
-            .Awaiting(() => Service.UpdatePasswordAsync(request, user.Id))
+            .Awaiting(() => Service.UpdatePasswordAsync(request, user.Id, CancellationToken.None))
             .Should()
             .ThrowAsync<UnauthorizedException>();
     }

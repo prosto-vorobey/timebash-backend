@@ -22,47 +22,51 @@ public class ActivityService(
     private readonly ICategoryRepository _categoryRepository = categoryRepository;
     private readonly IJournalRepository _journalRepository = journalRepository;
 
-    public async Task<ActivityResponse> GetByIdAsync(Guid id, Guid userId)
-        => (await EntityAccessGuard.EnsureActivityAccessAsync(_activityRepository, _journalRepository, id, userId)).ToResponse();
+    public async Task<ActivityResponse> GetByIdAsync(Guid id, Guid userId, CancellationToken cancellationToken)
+        => (await EntityAccessGuard.EnsureActivityAccessAsync(_activityRepository, _journalRepository, id, userId, cancellationToken)).ToResponse();
 
-    public async Task<CategoriesListResponse> GetCategoriesByActivityIdAsync(Guid id, Guid userId)
+    public async Task<CategoriesListResponse> GetCategoriesByActivityIdAsync(Guid id, Guid userId, CancellationToken cancellationToken)
     {
-        await EntityAccessGuard.ValidateActivityAccessAsync(_activityRepository, id, userId);
-        var categories = await _activityRepository.GetCategoriesByActivityIdAsync(id);
+        await EntityAccessGuard.ValidateActivityAccessAsync(_activityRepository, id, userId, cancellationToken);
+        var categories = await _activityRepository.GetCategoriesByActivityIdAsync(id, cancellationToken);
         return new ([.. categories.Select(category => category.ToResponse())]);
     }
 
-    public async Task<ActivityResponse> CreateAsync(ActivityRequest request, Guid userId)
+    public async Task<ActivityResponse> CreateAsync(ActivityRequest request, Guid userId, CancellationToken cancellationToken)
     {
-        var journal = await EntityAccessGuard.EnsureJournalAccessAsync(_journalRepository, request.JournalId, userId);
+        var journal = await EntityAccessGuard.EnsureJournalAccessAsync(_journalRepository, request.JournalId, userId, cancellationToken);
         
         var activity = request.ToActivity(Guid.NewGuid());
         _activityRepository.Add(activity);
 
-        var clearedCategoryIds = (await ResolveCategoryIdsAsync(userId, request.CategoryIds)).ToList();
+        var clearedCategoryIds = (await ResolveCategoryIdsAsync(userId, request.CategoryIds, cancellationToken)).ToList();
         if (clearedCategoryIds.Count > 0)
         {
             _activityRepository.AddCategoriesToActivity(activity.Id, clearedCategoryIds);
         }
 
         journal.UpdatedAt = DateTime.UtcNow;
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return activity.ToResponse();
     }
 
-    public async Task<ActivityWithCorrectionResponse> CreateWithCorrectionAsync(ActivityWithCorrectionRequest request, Guid userId)
+    public async Task<ActivityWithCorrectionResponse> CreateWithCorrectionAsync(
+        ActivityWithCorrectionRequest request, 
+        Guid userId, 
+        CancellationToken cancellationToken)
     {
-        var journal = await EntityAccessGuard.EnsureJournalAccessAsync(_journalRepository, request.JournalId, userId);
+        var journal = await EntityAccessGuard.EnsureJournalAccessAsync(_journalRepository, request.JournalId, userId, cancellationToken);
 
         var activityIds = request.ConflictResolutions.Select(resolution => resolution.ActivityId).ToHashSet();
-        var activities = (await _activityRepository.GetByIdsAsync(activityIds)).ToList();
-        if (activities.Count != activityIds.Count || activities.Any(activity => activity?.JournalId != request.JournalId)) throw new NotFoundException();
+        var activities = (await _activityRepository.GetByIdsAsync(activityIds, cancellationToken)).ToList();
+        if (activities.Count != activityIds.Count || activities.Any(activity => activity?.JournalId != request.JournalId)) 
+            throw new NotFoundException();
 
         var newActivity = request.ToActivity(Guid.NewGuid());
         _activityRepository.Add(newActivity);
 
-        var clearedCategoryIds = (await ResolveCategoryIdsAsync(userId, request.CategoryIds)).ToList();
+        var clearedCategoryIds = (await ResolveCategoryIdsAsync(userId, request.CategoryIds, cancellationToken)).ToList();
         if (clearedCategoryIds.Count > 0)
         {
             _activityRepository.AddCategoriesToActivity(newActivity.Id, clearedCategoryIds);
@@ -85,7 +89,7 @@ public class ActivityService(
                     activity.UpdateTimeRange(split.Parts[0].StartTime, split.Parts[0].EndTime);
                     activity.UpdatedAt = DateTime.UtcNow;
 
-                    var categoryIds = await _activityRepository.GetCategoryIdsByActivityIdAsync(resolution.ActivityId);
+                    var categoryIds = await _activityRepository.GetCategoryIdsByActivityIdAsync(resolution.ActivityId, cancellationToken);
 
                     for (var i = 1; i < split.Parts.Count; i++)
                     {
@@ -127,101 +131,132 @@ public class ActivityService(
         }
 
         journal.UpdatedAt = DateTime.UtcNow;
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new ActivityWithCorrectionResponse(newActivity.ToResponse(), additionalActivities.Select(activity => activity.ToResponse()));
     }
 
-    public async Task<bool> AddCategoryToActivityAsync(Guid activityId, Guid categoryId, Guid userId)
+    public async Task<bool> AddCategoryToActivityAsync(Guid activityId, Guid categoryId, Guid userId, CancellationToken cancellationToken)
     {
-        var activity = await EntityAccessGuard.EnsureActivityAccessAsync(_activityRepository, _journalRepository, activityId, userId);
-        await EntityAccessGuard.ValidateCategoryAccessAsync(_categoryRepository, categoryId, userId);
-        if (await _activityRepository.IsCategoryLinkedAsync(activityId, categoryId)) return false;
+        var activity = await EntityAccessGuard.EnsureActivityAccessAsync(
+            _activityRepository, 
+            _journalRepository, 
+            activityId, 
+            userId, 
+            cancellationToken);
+        await EntityAccessGuard.ValidateCategoryAccessAsync(_categoryRepository, categoryId, userId, cancellationToken);
+        if (await _activityRepository.IsCategoryLinkedAsync(activityId, categoryId, cancellationToken)) return false;
 
         _activityRepository.AddCategoryToActivity(activityId, categoryId);
-        await ApplyUpdatedChangesAsync(activity);
+        await ApplyUpdatedChangesAsync(activity, cancellationToken);
 
         return true;
     }
 
-    public async Task<bool> AddCategoriesToActivityAsync(Guid activityId, ActivityCategoriesRequest request, Guid userId)
+    public async Task<bool> AddCategoriesToActivityAsync(
+        Guid activityId, 
+        ActivityCategoriesRequest request, 
+        Guid userId, 
+        CancellationToken cancellationToken)
     {
-        var activity = await EntityAccessGuard.EnsureActivityAccessAsync(_activityRepository, _journalRepository, activityId, userId);
+        var activity = await EntityAccessGuard.EnsureActivityAccessAsync(
+            _activityRepository, 
+            _journalRepository, 
+            activityId, 
+            userId, 
+            cancellationToken);
         if (request.CategoryIds.Count == 0) return false;
 
-        var newCategoryIds = await ResolveCategoryIdsAsync(userId, request.CategoryIds, await _activityRepository.GetCategoryIdsByActivityIdAsync(activityId));
+        var newCategoryIds = await ResolveCategoryIdsAsync(
+            userId, 
+            request.CategoryIds, 
+            await _activityRepository.GetCategoryIdsByActivityIdAsync(activityId, cancellationToken), cancellationToken);
         if (!newCategoryIds.Any()) return false;
 
         _activityRepository.AddCategoriesToActivity(activityId, newCategoryIds);
-        await ApplyUpdatedChangesAsync(activity);
+        await ApplyUpdatedChangesAsync(activity, cancellationToken);
 
         return true;
     }
 
-    public async Task<bool> UpdateAsync(Guid id, ActivityRequest request, Guid userId)
+    public async Task<bool> UpdateAsync(Guid id, ActivityRequest request, Guid userId, CancellationToken cancellationToken)
     {
-        var activity = await EntityAccessGuard.EnsureActivityAccessAsync(_activityRepository, _journalRepository, id, userId);
-        await EntityAccessGuard.ValidateJournalAccessAsync(_journalRepository, request.JournalId, userId);
+        var activity = await EntityAccessGuard.EnsureActivityAccessAsync(_activityRepository, _journalRepository, id, userId, cancellationToken);
+        await EntityAccessGuard.ValidateJournalAccessAsync(_journalRepository, request.JournalId, userId, cancellationToken);
 
         var isActivityUpdated = activity.ApplyUpdate(request);
-        var isCategoriesUpdated = await UpdateCategoriesAsync(activity.Id, request.CategoryIds, userId);
+        var isCategoriesUpdated = await UpdateCategoriesAsync(activity.Id, request.CategoryIds, userId, cancellationToken);
         var isUpdated = isActivityUpdated || isCategoriesUpdated;
-        if (isUpdated) await ApplyUpdatedChangesAsync(activity);
+        if (isUpdated) await ApplyUpdatedChangesAsync(activity, cancellationToken);
 
         return isUpdated;
     }
 
-    public async Task<bool> UpdateActivityCategoriesAsync(Guid activityId, ActivityCategoriesRequest request, Guid userId)
+    public async Task<bool> UpdateActivityCategoriesAsync(
+        Guid activityId, 
+        ActivityCategoriesRequest request, 
+        Guid userId, 
+        CancellationToken cancellationToken)
     {
-        var activity = await EntityAccessGuard.EnsureActivityAccessAsync(_activityRepository, _journalRepository, activityId, userId);
+        var activity = await EntityAccessGuard.EnsureActivityAccessAsync(
+            _activityRepository, 
+            _journalRepository, 
+            activityId, 
+            userId, 
+            cancellationToken);
 
-        var isUpdated = await UpdateCategoriesAsync(activity.Id, request.CategoryIds, userId);
-        if (isUpdated) await ApplyUpdatedChangesAsync(activity);
+        var isUpdated = await UpdateCategoriesAsync(activity.Id, request.CategoryIds, userId, cancellationToken);
+        if (isUpdated) await ApplyUpdatedChangesAsync(activity, cancellationToken);
 
         return isUpdated;
     }
 
-    public async Task DeleteAsync(Guid id, Guid userId)
+    public async Task DeleteAsync(Guid id, Guid userId, CancellationToken cancellationToken)
     {
-        var activity = await EntityAccessGuard.EnsureActivityAccessAsync(_activityRepository, _journalRepository, id, userId);
-        var journal = await _journalRepository.GetByIdAsync(activity.JournalId) ?? throw new NotFoundException();
+        var activity = await EntityAccessGuard.EnsureActivityAccessAsync(_activityRepository, _journalRepository, id, userId, cancellationToken);
+        var journal = await _journalRepository.GetByIdAsync(activity.JournalId, cancellationToken) ?? throw new NotFoundException();
 
         _activityRepository.Delete(activity);
         journal.UpdatedAt = DateTime.UtcNow;
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<bool> RemoveCategoryFromActivityAsync(Guid activityId, Guid categoryId, Guid userId)
+    public async Task<bool> RemoveCategoryFromActivityAsync(Guid activityId, Guid categoryId, Guid userId, CancellationToken cancellationToken)
     {
-        var activity = await EntityAccessGuard.EnsureActivityAccessAsync(_activityRepository, _journalRepository, activityId, userId);
-        await EntityAccessGuard.ValidateCategoryAccessAsync(_categoryRepository, categoryId, userId);
-        if (!await _activityRepository.IsCategoryLinkedAsync(activityId, categoryId)) return false;
+        var activity = await EntityAccessGuard.EnsureActivityAccessAsync(
+            _activityRepository, 
+            _journalRepository, 
+            activityId, 
+            userId, 
+            cancellationToken);
+        await EntityAccessGuard.ValidateCategoryAccessAsync(_categoryRepository, categoryId, userId, cancellationToken);
+        if (!await _activityRepository.IsCategoryLinkedAsync(activityId, categoryId, cancellationToken)) return false;
 
-        await _activityRepository.RemoveCategoryFromActivityAsync(activityId, categoryId);
-        await ApplyUpdatedChangesAsync(activity);
+        await _activityRepository.RemoveCategoryFromActivityAsync(activityId, categoryId, cancellationToken);
+        await ApplyUpdatedChangesAsync(activity, cancellationToken);
         return true;
     }
 
-    private async Task ApplyUpdatedChangesAsync(Activity activity)
+    private async Task ApplyUpdatedChangesAsync(Activity activity, CancellationToken cancellationToken)
     {
         activity.UpdatedAt = DateTime.UtcNow;
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
     private static IEnumerable<Guid> GetClearCategoryIds(IEnumerable<Guid> categoryIds) => categoryIds.Where(id => id != Guid.Empty).Distinct();
 
-    private async Task<bool> UpdateCategoriesAsync(Guid activityId, IEnumerable<Guid> categoryIds, Guid userId)
+    private async Task<bool> UpdateCategoriesAsync(Guid activityId, IEnumerable<Guid> categoryIds, Guid userId, CancellationToken cancellationToken)
     {
-        var currentCategories = await _activityRepository.GetCategoryIdsByActivityIdAsync(activityId);
+        var currentCategories = await _activityRepository.GetCategoryIdsByActivityIdAsync(activityId, cancellationToken);
 
         if (!categoryIds.Any())
         {
             if (!currentCategories.Any()) return false;
-            await _activityRepository.ClearActivityCategoriesAsync(activityId);
+            await _activityRepository.ClearActivityCategoriesAsync(activityId, cancellationToken);
         }
         else
         {
-            var newCategoryIds = await ResolveCategoryIdsAsync(userId, categoryIds, currentCategories);
+            var newCategoryIds = await ResolveCategoryIdsAsync(userId, categoryIds, currentCategories, cancellationToken);
             if (!newCategoryIds.Any()) return false;
 
             _activityRepository.AddCategoriesToActivity(activityId, newCategoryIds);
@@ -230,29 +265,33 @@ public class ActivityService(
         return true;
     }
 
-    private async Task<IEnumerable<Guid>> ResolveCategoryIdsAsync(Guid userId, IEnumerable<Guid> ids)
+    private async Task<IEnumerable<Guid>> ResolveCategoryIdsAsync(Guid userId, IEnumerable<Guid> ids, CancellationToken cancellationToken)
     {
         var clearedIds = GetClearCategoryIds(ids).ToList();
         if (clearedIds.Count == 0) return [];
 
-        await CheckCategories(clearedIds, userId);
+        await CheckCategories(clearedIds, userId, cancellationToken);
         return clearedIds;
     }
 
-    private async Task<IEnumerable<Guid>> ResolveCategoryIdsAsync(Guid userId, IEnumerable<Guid> ids, IEnumerable<Guid> exceptedIds)
+    private async Task<IEnumerable<Guid>> ResolveCategoryIdsAsync(
+        Guid userId, 
+        IEnumerable<Guid> ids, 
+        IEnumerable<Guid> exceptedIds, 
+        CancellationToken cancellationToken)
     {
         var clearedIds = GetClearCategoryIds(ids);
         if (!clearedIds.Any()) throw new BadRequestException();
 
         var newIds = clearedIds.Except(exceptedIds).ToList();
-        if (newIds.Count != 0) await CheckCategories(newIds, userId);
+        if (newIds.Count != 0) await CheckCategories(newIds, userId, cancellationToken);
 
         return newIds;
     }
 
-    private async Task CheckCategories(List<Guid> categoryIds, Guid userId)
+    private async Task CheckCategories(List<Guid> categoryIds, Guid userId, CancellationToken cancellationToken)
     {
-        var categories = (await _categoryRepository.GetByIdsAsync(categoryIds)).ToList();
+        var categories = (await _categoryRepository.GetByIdsAsync(categoryIds, cancellationToken)).ToList();
         if (categories.Count != categoryIds.Count) throw new BadRequestException();
         if (categories.Any(category => category.UserId != userId)) throw new NotFoundException();
     }

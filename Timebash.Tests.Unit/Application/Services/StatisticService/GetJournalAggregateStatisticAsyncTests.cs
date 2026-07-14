@@ -22,15 +22,17 @@ public class GetJournalAggregateStatisticAsyncTests : StatisticServiceTestsBase
         var journal = new Journal(journalId, userId, Faker.Lorem.Word());
         var expected = new JournalAggregateStatisticResponse(expectedTime, expectedStats);
 
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, userId)).ReturnsAsync(true);
+        JournalRepositoryMock
+            .Setup(repository => repository.IsUserLinkedAsync(journal.Id, userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
         ActivityQueryServiceMock
             .Setup(service => service.GetActivitiesForJournalAsync(journal.Id, null, null, ActivityDateFilterMode.Overlap))
             .Returns(activities.ToAsyncEnumerable());
 
-        var result = await Service.GetJournalAggregateStatisticAsync(journal.Id, null, null, userId);
+        var result = await Service.GetJournalAggregateStatisticAsync(journal.Id, null, null, userId, CancellationToken.None);
         result.Should().BeEquivalentTo(expected);
 
-        JournalRepositoryMock.Verify(repository => repository.IsUserLinkedAsync(journal.Id, userId), Times.Once);
+        JournalRepositoryMock.Verify(repository => repository.IsUserLinkedAsync(journal.Id, userId, It.IsAny<CancellationToken>()), Times.Once);
         ActivityQueryServiceMock.Verify(
             service => service.GetActivitiesForJournalAsync(journal.Id, null, null, ActivityDateFilterMode.Overlap), 
             Times.Once);
@@ -51,15 +53,17 @@ public class GetJournalAggregateStatisticAsyncTests : StatisticServiceTestsBase
         );
         var expected = new JournalAggregateStatisticResponse(expectedTime, expectedStats);
 
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, userId)).ReturnsAsync(true);
+        JournalRepositoryMock
+            .Setup(repository => repository.IsUserLinkedAsync(journal.Id, userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
         ActivityQueryServiceMock
             .Setup(service => service.GetActivitiesForJournalAsync(journal.Id, startDate, null, ActivityDateFilterMode.Overlap))
             .Returns(activities.ToAsyncEnumerable());
 
-        var result = await Service.GetJournalAggregateStatisticAsync(journal.Id, startDate, null, userId);
+        var result = await Service.GetJournalAggregateStatisticAsync(journal.Id, startDate, null, userId, CancellationToken.None);
         result.Should().BeEquivalentTo(expected);
 
-        JournalRepositoryMock.Verify(repository => repository.IsUserLinkedAsync(journal.Id, userId), Times.Once);
+        JournalRepositoryMock.Verify(repository => repository.IsUserLinkedAsync(journal.Id, userId, It.IsAny<CancellationToken>()), Times.Once);
         ActivityQueryServiceMock.Verify(
             service => service.GetActivitiesForJournalAsync(journal.Id, startDate, null, ActivityDateFilterMode.Overlap), 
             Times.Once);
@@ -80,15 +84,17 @@ public class GetJournalAggregateStatisticAsyncTests : StatisticServiceTestsBase
         );
         var expected = new JournalAggregateStatisticResponse(expectedTime, expectedStats);
 
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, userId)).ReturnsAsync(true);
+        JournalRepositoryMock
+            .Setup(repository => repository.IsUserLinkedAsync(journal.Id, userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
         ActivityQueryServiceMock
             .Setup(service => service.GetActivitiesForJournalAsync(journal.Id, null, endDate, ActivityDateFilterMode.Overlap))
             .Returns(activities.ToAsyncEnumerable());
 
-        var result = await Service.GetJournalAggregateStatisticAsync(journal.Id, null, endDate, userId);
+        var result = await Service.GetJournalAggregateStatisticAsync(journal.Id, null, endDate, userId, CancellationToken.None);
         result.Should().BeEquivalentTo(expected);
 
-        JournalRepositoryMock.Verify(repository => repository.IsUserLinkedAsync(journal.Id, userId), Times.Once);
+        JournalRepositoryMock.Verify(repository => repository.IsUserLinkedAsync(journal.Id, userId, It.IsAny<CancellationToken>()), Times.Once);
         ActivityQueryServiceMock.Verify(
             service => service.GetActivitiesForJournalAsync(journal.Id, null, endDate, ActivityDateFilterMode.Overlap), 
             Times.Once);
@@ -111,15 +117,17 @@ public class GetJournalAggregateStatisticAsyncTests : StatisticServiceTestsBase
         );
         var expected = new JournalAggregateStatisticResponse(expectedTime, expectedStats);
 
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, userId)).ReturnsAsync(true);
+        JournalRepositoryMock
+            .Setup(repository => repository.IsUserLinkedAsync(journal.Id, userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
         ActivityQueryServiceMock
             .Setup(service => service.GetActivitiesForJournalAsync(journal.Id, startDate, endDate, ActivityDateFilterMode.Overlap))
             .Returns(activities.ToAsyncEnumerable());
 
-        var result = await Service.GetJournalAggregateStatisticAsync(journal.Id, startDate, endDate, userId);
+        var result = await Service.GetJournalAggregateStatisticAsync(journal.Id, startDate, endDate, userId, CancellationToken.None);
         result.Should().BeEquivalentTo(expected);
 
-        JournalRepositoryMock.Verify(repository => repository.IsUserLinkedAsync(journal.Id, userId), Times.Once);
+        JournalRepositoryMock.Verify(repository => repository.IsUserLinkedAsync(journal.Id, userId, It.IsAny<CancellationToken>()), Times.Once);
         ActivityQueryServiceMock.Verify(
             service => service.GetActivitiesForJournalAsync(journal.Id, startDate, endDate, ActivityDateFilterMode.Overlap), 
             Times.Once);
@@ -128,7 +136,7 @@ public class GetJournalAggregateStatisticAsyncTests : StatisticServiceTestsBase
     [Fact]
     public async Task GetJournalAggregateStatistic_EmptyId_ShouldThrowBadRequest()
         => await FluentActions
-            .Awaiting(() => Service.GetJournalAggregateStatisticAsync(Guid.Empty, null, null, Guid.NewGuid()))
+            .Awaiting(() => Service.GetJournalAggregateStatisticAsync(Guid.Empty, null, null, Guid.NewGuid(), It.IsAny<CancellationToken>()))
             .Should()
             .ThrowAsync<BadRequestException>();
 
@@ -137,10 +145,10 @@ public class GetJournalAggregateStatisticAsyncTests : StatisticServiceTestsBase
     {
         var id = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(id, userId)).ReturnsAsync(false);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(id, userId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
         await FluentActions
-            .Awaiting(() => Service.GetJournalAggregateStatisticAsync(id, null, null, userId))
+            .Awaiting(() => Service.GetJournalAggregateStatisticAsync(id, null, null, userId, It.IsAny<CancellationToken>()))
             .Should()
             .ThrowAsync<NotFoundException>();
     }

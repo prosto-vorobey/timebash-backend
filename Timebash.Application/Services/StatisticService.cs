@@ -16,33 +16,52 @@ public class StatisticService(
     private readonly ICategoryRepository _categoryRepository = categoryRepository;
     private readonly IActivityQueryService _queryService = queryService;
 
-    public async Task<UserAggregateStatisticResponse> GetUserAggregateStatisticAsync(Guid userId, DateTime? start, DateTime? end)
+    public async Task<UserAggregateStatisticResponse> GetUserAggregateStatisticAsync(
+        Guid userId, 
+        DateTime? start, 
+        DateTime? end, 
+        CancellationToken cancellationToken)
     {
-        await EntityAccessGuard.ValidateUserExistsAsync(_userRepository, userId);
+        await EntityAccessGuard.ValidateUserExistsAsync(_userRepository, userId, cancellationToken);
 
-        var (totalTime, statItems) = await AggregateCategoryStatisticAsync(_queryService.GetActivitiesForUserAsync(userId, start, end), start, end);
+        var (totalTime, statItems) = await AggregateCategoryStatisticAsync(
+            _queryService.GetActivitiesForUserAsync(userId, start, end), 
+            start, 
+            end,
+            cancellationToken);
 
         return new UserAggregateStatisticResponse(totalTime, statItems);
     }
 
-    public async Task<JournalAggregateStatisticResponse> GetJournalAggregateStatisticAsync(Guid journalId, DateTime? start, DateTime? end, Guid userId)
+    public async Task<JournalAggregateStatisticResponse> GetJournalAggregateStatisticAsync(
+        Guid journalId, 
+        DateTime? start, 
+        DateTime? end, 
+        Guid userId, 
+        CancellationToken cancellationToken)
     {
-        await EntityAccessGuard.ValidateJournalAccessAsync(_journalRepository, journalId, userId);
+        await EntityAccessGuard.ValidateJournalAccessAsync(_journalRepository, journalId, userId, cancellationToken);
 
         var (totalTime, statItems) = await AggregateCategoryStatisticAsync(
             _queryService.GetActivitiesForJournalAsync(journalId, start, end, ActivityDateFilterMode.Overlap), 
             start, 
-            end);
+            end,
+            cancellationToken);
 
         return new JournalAggregateStatisticResponse(totalTime, statItems);
     }
 
-    public async Task<CategoryStatisticResponse> GetCategoryStatisticAsync(Guid categoryId, DateTime? start, DateTime? end, Guid userId)
+    public async Task<CategoryStatisticResponse> GetCategoryStatisticAsync(
+        Guid categoryId, 
+        DateTime? start, 
+        DateTime? end, 
+        Guid userId, 
+        CancellationToken cancellationToken)
     {
-        await EntityAccessGuard.ValidateCategoryAccessAsync(_categoryRepository, categoryId, userId);
+        await EntityAccessGuard.ValidateCategoryAccessAsync(_categoryRepository, categoryId, userId, cancellationToken);
         
         long totalTime = 0;
-        await foreach (var activity in _queryService.GetActivitiesForCategoryAsync(categoryId, start, end))
+        await foreach (var activity in _queryService.GetActivitiesForCategoryAsync(categoryId, start, end).WithCancellation(cancellationToken))
         {
             totalTime += GetIntersectingTimeSeconds(activity, start, end);
         }
@@ -53,14 +72,15 @@ public class StatisticService(
     private static async Task<(long TotalTime, List<CategoryStatItem> Items)> AggregateCategoryStatisticAsync(
         IAsyncEnumerable<Activity> activities, 
         DateTime? start,
-        DateTime? end)
+        DateTime? end,
+        CancellationToken cancellationToken)
     {
         var totalTime = 0L;
         var timeWithoutCategory = 0L;
         var categoryTimes = new Dictionary<Guid, long>();
         var categoriesData = new Dictionary<Guid, Category>();
 
-        await foreach (var activity in activities)
+        await foreach (var activity in activities.WithCancellation(cancellationToken))
         {
             var time = GetIntersectingTimeSeconds(activity, start, end);
             if (time == 0L) continue;

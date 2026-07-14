@@ -17,10 +17,10 @@ public class UpdateEmailAsyncTests : MeServiceTestsBase
         var currentCreatedTime = user.CreatedAt;
         var request = new UserEmailUpdateRequest($"{user.Email} changed");
 
-        UserRepositoryMock.Setup(repository => repository.ExistsByEmailAsync(request.Email)).ReturnsAsync(false);
-        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync(user);
+        UserRepositoryMock.Setup(repository => repository.ExistsByEmailAsync(request.Email, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(user);
 
-        var result = await Service.UpdateEmailAsync(request, id);
+        var result = await Service.UpdateEmailAsync(request, id, CancellationToken.None);
 
         result.Should().BeTrue();
         user.Id.Should().Be(id);
@@ -29,8 +29,8 @@ public class UpdateEmailAsyncTests : MeServiceTestsBase
         user.PasswordHash.Should().BeNull();
         user.CreatedAt.Should().Be(currentCreatedTime);
 
-        UserRepositoryMock.Verify(repository => repository.ExistsByEmailAsync(request.Email), Times.Once);
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(), Times.Once);
+        UserRepositoryMock.Verify(repository => repository.ExistsByEmailAsync(request.Email, It.IsAny<CancellationToken>()), Times.Once);
+        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -43,10 +43,10 @@ public class UpdateEmailAsyncTests : MeServiceTestsBase
         var currentCreatedTime = user.CreatedAt;
         var request = new UserEmailUpdateRequest(user.Email);
 
-        UserRepositoryMock.Setup(repository => repository.ExistsByEmailAsync(request.Email)).ReturnsAsync(false);
-        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync(user);
+        UserRepositoryMock.Setup(repository => repository.ExistsByEmailAsync(request.Email, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(user);
 
-        var result = await Service.UpdateEmailAsync(request, id);
+        var result = await Service.UpdateEmailAsync(request, id, CancellationToken.None);
 
         result.Should().BeFalse();
         user.Id.Should().Be(id);
@@ -55,18 +55,18 @@ public class UpdateEmailAsyncTests : MeServiceTestsBase
         user.PasswordHash.Should().BeNull();
         user.CreatedAt.Should().Be(currentCreatedTime);
 
-        UserRepositoryMock.Verify(repository => repository.ExistsByEmailAsync(request.Email), Times.Once);
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(), Times.Never);
+        UserRepositoryMock.Verify(repository => repository.ExistsByEmailAsync(request.Email, It.IsAny<CancellationToken>()), Times.Once);
+        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
     public async Task UpdateEmail_EmailAlreadyExists_ShouldThrowResourceConflictException()
     {
         var request = new UserEmailUpdateRequest(Faker.Internet.Email());
-        UserRepositoryMock.Setup(repository => repository.ExistsByEmailAsync(request.Email)).ReturnsAsync(true);
+        UserRepositoryMock.Setup(repository => repository.ExistsByEmailAsync(request.Email, It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
         var exception = await FluentActions
-            .Awaiting(() => Service.UpdateEmailAsync(request, Guid.NewGuid()))
+            .Awaiting(() => Service.UpdateEmailAsync(request, Guid.NewGuid(), CancellationToken.None))
             .Should()
             .ThrowAsync<ResourceConflictException>();
         exception.Which.Field.Should().Be("Email");
@@ -76,10 +76,10 @@ public class UpdateEmailAsyncTests : MeServiceTestsBase
     public async Task UpdateEmail_EmptyId_ShouldThrowBadRequest()
     {
         var request = new UserEmailUpdateRequest(Faker.Internet.Email());
-        UserRepositoryMock.Setup(repository => repository.ExistsByEmailAsync(request.Email)).ReturnsAsync(false);
+        UserRepositoryMock.Setup(repository => repository.ExistsByEmailAsync(request.Email, It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
         await FluentActions
-            .Awaiting(() => Service.UpdateEmailAsync(request, Guid.Empty))
+            .Awaiting(() => Service.UpdateEmailAsync(request, Guid.Empty, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>()
             .WithMessage("Invalid id");
@@ -91,11 +91,11 @@ public class UpdateEmailAsyncTests : MeServiceTestsBase
         var id = Guid.NewGuid();
         var request = new UserEmailUpdateRequest(Faker.Internet.Email());
 
-        UserRepositoryMock.Setup(repository => repository.ExistsByEmailAsync(request.Email)).ReturnsAsync(false);
-        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync((User?)null);
+        UserRepositoryMock.Setup(repository => repository.ExistsByEmailAsync(request.Email, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
 
         await FluentActions
-            .Awaiting(() => Service.UpdateEmailAsync(request, id))
+            .Awaiting(() => Service.UpdateEmailAsync(request, id, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
     }

@@ -36,22 +36,22 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                         ]))
             ]);
 
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
+            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync([overlap]);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart))
+            .Setup(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Activity?)null);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd))
+            .Setup(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Activity?)null);
 
-        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId);
+        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId, CancellationToken.None);
 
         result.Should().BeEquivalentTo(expected);
-        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart), Times.Once);
-        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart, It.IsAny<CancellationToken>()), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -75,22 +75,22 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(overlap.EndTime, truncatedEnd))
             ]);
 
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
+            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync([overlap]);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart))
+            .Setup(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Activity?)null);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd))
+            .Setup(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Activity?)null);
 
-        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId);
+        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId, CancellationToken.None);
 
         result.Should().BeEquivalentTo(expected);
-        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart), Times.Once);
-        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart, It.IsAny<CancellationToken>()), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -114,22 +114,22 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(truncatedStart, overlap.StartTime))
             ]);
 
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
+            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync([overlap]);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart))
+            .Setup(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Activity?)null);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd))
+            .Setup(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Activity?)null);
 
-        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId);
+        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId, CancellationToken.None);
 
         result.Should().BeEquivalentTo(expected);
-        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart), Times.Once);
-        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart, It.IsAny<CancellationToken>()), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -153,22 +153,22 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(truncatedEnd, truncatedEnd))
             ]);
 
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
+            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync([overlap]);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart))
+            .Setup(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Activity?)null);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd))
+            .Setup(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Activity?)null);
 
-        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId);
+        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId, CancellationToken.None);
 
         result.Should().BeEquivalentTo(expected);
-        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart), Times.Once);
-        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart, It.IsAny<CancellationToken>()), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -194,16 +194,16 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new DeleteCorrection())
             ]);
 
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, startTime, endTime))
+            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, startTime, endTime, It.IsAny<CancellationToken>()))
             .ReturnsAsync([overlap]);
 
-        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId);
+        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId, CancellationToken.None);
 
         result.Should().BeEquivalentTo(expected);
-        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, startTime), Times.Never);
-        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, endTime), Times.Never);
+        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, startTime, It.IsAny<CancellationToken>()), Times.Never);
+        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, endTime, It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Theory]
@@ -227,19 +227,19 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(overlap.EndTime, truncatedEnd))
             ]);
 
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
+            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync([overlap]);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd))
+            .Setup(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Activity?)null);
 
-        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId);
+        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId, CancellationToken.None);
 
         result.Should().BeEquivalentTo(expected);
-        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd), Times.Once);
-        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart), Times.Never);
+        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart, It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Theory]
@@ -263,19 +263,19 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(truncatedStart, overlap.StartTime))
             ]);
 
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
+            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync([overlap]);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart))
+            .Setup(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Activity?)null);
 
-        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId);
+        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId, CancellationToken.None);
 
         result.Should().BeEquivalentTo(expected);
-        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart), Times.Once);
-        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd), Times.Never);
+        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart, It.IsAny<CancellationToken>()), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -334,19 +334,19 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(truncatedStart, overlaps[3].StartTime)),
             ]);
 
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
+            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync(overlaps);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd))
+            .Setup(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Activity?)null);
 
-        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId);
+        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId, CancellationToken.None);
 
         result.Should().BeEquivalentTo(expected);
-        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd), Times.Once);
-        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart), Times.Never);
+        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart, It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -421,22 +421,22 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(truncatedStart, next.StartTime))
             ]);
 
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
+            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync(overlaps);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart))
+            .Setup(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart, It.IsAny<CancellationToken>()))
             .ReturnsAsync(previous);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd))
+            .Setup(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync(next);
 
-        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId);
+        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId, CancellationToken.None);
 
         result.Should().BeEquivalentTo(expected);
-        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart), Times.Once);
-        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart, It.IsAny<CancellationToken>()), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -460,22 +460,22 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(previous.EndTime, truncatedEnd)),
             ]);
 
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
+            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart))
+            .Setup(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart, It.IsAny<CancellationToken>()))
             .ReturnsAsync(previous);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd))
+            .Setup(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Activity?)null);
 
-        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, truncatedStart, endTime, journal.UserId);
+        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, truncatedStart, endTime, journal.UserId, CancellationToken.None);
 
         result.Should().BeEquivalentTo(expected);
-        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart), Times.Once);
-        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart, It.IsAny<CancellationToken>()), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -488,22 +488,22 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
         var truncatedEnd = endTime.TruncateToSecond();
         var previous = new Activity(Guid.NewGuid(), journal.Id, DateTime.MinValue, startTime, Faker.Lorem.Sentence());
 
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
+            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart))
+            .Setup(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart, It.IsAny<CancellationToken>()))
             .ReturnsAsync(previous);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd))
+            .Setup(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Activity?)null);
 
-        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId);
+        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId, CancellationToken.None);
 
         result.Corrections.Should().BeEmpty();
-        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart), Times.Once);
-        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart, It.IsAny<CancellationToken>()), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -527,22 +527,22 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(truncatedStart, next.StartTime))
             ]);
 
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
+            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart))
+            .Setup(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Activity?)null);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd))
+            .Setup(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync(next);
 
-        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId);
+        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId, CancellationToken.None);
 
         result.Should().BeEquivalentTo(expected);
-        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart), Times.Once);
-        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart, It.IsAny<CancellationToken>()), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -555,22 +555,22 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
         var truncatedEnd = endTime.TruncateToSecond();
         var next = new Activity(Guid.NewGuid(), journal.Id, endTime, DateTime.MaxValue, Faker.Lorem.Sentence());
 
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
+            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart))
+            .Setup(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Activity?)null);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd))
+            .Setup(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync(next);
 
-        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId);
+        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId, CancellationToken.None);
 
         result.Corrections.Should().BeEmpty();
-        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart), Times.Once);
-        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart, It.IsAny<CancellationToken>()), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -602,22 +602,22 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(truncatedStart, next.StartTime))
             ]);
 
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
+            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart))
+            .Setup(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart, It.IsAny<CancellationToken>()))
             .ReturnsAsync(previous);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd))
+            .Setup(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync(next);
 
-        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId);
+        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId, CancellationToken.None);
 
         result.Should().BeEquivalentTo(expected);
-        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart), Times.Once);
-        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart, It.IsAny<CancellationToken>()), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -629,28 +629,28 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
         var truncatedStart = startTime.TruncateToSecond();
         var truncatedEnd = endTime.TruncateToSecond();
 
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd))
+            .Setup(repository => repository.GetOverlappingActivitiesAsync(journal.Id, truncatedStart, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart))
+            .Setup(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Activity?)null);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd))
+            .Setup(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Activity?)null);
 
-        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId);
+        var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId, CancellationToken.None);
 
         result.Corrections.Should().BeEmpty();
-        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart), Times.Once);
-        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.GetPreviousActivityAsync(journal.Id, truncatedStart, It.IsAny<CancellationToken>()), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.GetNextActivityAsync(journal.Id, truncatedEnd, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task GetTimeCorrectionConflicts_EmptyId_ShouldThrowBadRequest()
         => await FluentActions
-            .Awaiting(() => Service.GetTimeCorrectionConflictsAsync(Guid.Empty, DateTime.MinValue, DateTime.MaxValue, Guid.NewGuid()))
+            .Awaiting(() => Service.GetTimeCorrectionConflictsAsync(Guid.Empty, DateTime.MinValue, DateTime.MaxValue, Guid.NewGuid(), CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
 
@@ -659,10 +659,10 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
     {
         var id = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(id, userId)).ReturnsAsync(false);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(id, userId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
         await FluentActions
-            .Awaiting(() => Service.GetTimeCorrectionConflictsAsync(id, DateTime.MinValue, DateTime.MaxValue, userId))
+            .Awaiting(() => Service.GetTimeCorrectionConflictsAsync(id, DateTime.MinValue, DateTime.MaxValue, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
     }

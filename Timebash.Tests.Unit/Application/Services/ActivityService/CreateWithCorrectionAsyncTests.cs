@@ -28,14 +28,16 @@ public class CreateWithCorrectionAsyncTests : ActivityServiceTestsBase
         var currentJournalUpdatedTime = journal.UpdatedAt;
         var capturedActivities = new List<Activity>();
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync(journal);
-        ActivityRepositoryMock.Setup(repository => repository.GetByIdsAsync(new List<Guid>())).ReturnsAsync([]);
+        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
+        ActivityRepositoryMock.Setup(repository => repository.GetByIdsAsync(new List<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync([]);
         ActivityRepositoryMock.Setup(repository => repository.Add(It.IsAny<Activity>()))
             .Callback<Activity>(capturedActivities.Add);
-        CategoryRepositoryMock.Setup(repository => repository.GetByIdsAsync(It.Is<IEnumerable<Guid>>(ids =>
-            ids.OrderBy(id => id).SequenceEqual(clearedCategoryIds.OrderBy(id => id))))).ReturnsAsync(categories);
+        CategoryRepositoryMock.Setup(repository => repository.GetByIdsAsync(
+                It.Is<IEnumerable<Guid>>(ids => ids.OrderBy(id => id).SequenceEqual(clearedCategoryIds.OrderBy(id => id))),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(categories);
 
-        var result = await Service.CreateWithCorrectionAsync(request, userId);
+        var result = await Service.CreateWithCorrectionAsync(request, userId, CancellationToken.None);
 
         capturedActivities.Should().HaveCount(1);
 
@@ -55,7 +57,7 @@ public class CreateWithCorrectionAsyncTests : ActivityServiceTestsBase
             repository => repository.AddCategoriesToActivity(capturedActivity.Id, It.Is<IEnumerable<Guid>>(ids =>
                 ids.OrderBy(id => id).SequenceEqual(clearedCategoryIds.OrderBy(id => id)))),
             Times.Once);
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(), Times.Once);
+        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         ActivityRepositoryMock.Verify(repository => repository.Delete(It.IsAny<Activity>()), Times.Never);
         ActivityRepositoryMock.Verify(repository => repository.Add(It.Is<Activity>(activity => activity != capturedActivity)), Times.Never);
         ActivityRepositoryMock.Verify(
@@ -71,11 +73,11 @@ public class CreateWithCorrectionAsyncTests : ActivityServiceTestsBase
         var currentJournalUpdatedTime = journal.UpdatedAt;
         var capturedActivities = new List<Activity>();
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync(journal);
-        ActivityRepositoryMock.Setup(repository => repository.GetByIdsAsync(new List<Guid>())).ReturnsAsync([]);
+        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
+        ActivityRepositoryMock.Setup(repository => repository.GetByIdsAsync(new List<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync([]);
         ActivityRepositoryMock.Setup(repository => repository.Add(It.IsAny<Activity>())).Callback<Activity>(capturedActivities.Add);
 
-        var result = await Service.CreateWithCorrectionAsync(request, journal.UserId);
+        var result = await Service.CreateWithCorrectionAsync(request, journal.UserId, CancellationToken.None);
 
         capturedActivities.Should().HaveCount(1);
 
@@ -92,7 +94,7 @@ public class CreateWithCorrectionAsyncTests : ActivityServiceTestsBase
         result.AdditionalActivities.Should().BeEmpty();
         journal.UpdatedAt.Should().BeAfter(currentJournalUpdatedTime);
 
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(), Times.Once);
+        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         ActivityRepositoryMock.Verify(repository => repository.Delete(It.IsAny<Activity>()), Times.Never);
         ActivityRepositoryMock.Verify(repository => repository.Add(It.Is<Activity>(activity => activity != capturedActivity)), Times.Never);
         ActivityRepositoryMock.Verify(
@@ -130,14 +132,16 @@ public class CreateWithCorrectionAsyncTests : ActivityServiceTestsBase
             .ToList();
         var capturedActivities = new List<Activity>();
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetByIdsAsync(It.Is<IEnumerable<Guid>>(ids =>
-                ids.OrderBy(id => id).SequenceEqual(resolutions.Select(resolution => resolution.ActivityId).OrderBy(id => id)))))
+            .Setup(repository => repository.GetByIdsAsync(
+                It.Is<IEnumerable<Guid>>(ids => 
+                    ids.OrderBy(id => id).SequenceEqual(resolutions.Select(resolution => resolution.ActivityId).OrderBy(id => id))), 
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(activities);
         ActivityRepositoryMock.Setup(repository => repository.Add(It.IsAny<Activity>())).Callback<Activity>(capturedActivities.Add);
 
-        var result = await Service.CreateWithCorrectionAsync(request, journal.UserId);
+        var result = await Service.CreateWithCorrectionAsync(request, journal.UserId, CancellationToken.None);
 
         capturedActivities.Should().HaveCount(1);
 
@@ -166,7 +170,7 @@ public class CreateWithCorrectionAsyncTests : ActivityServiceTestsBase
 
         journal.UpdatedAt.Should().BeAfter(currentJournalUpdatedTime);
 
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(), Times.Once);
+        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         ActivityRepositoryMock.Verify(repository => repository.Delete(It.IsAny<Activity>()), Times.Never);
         ActivityRepositoryMock.Verify(
             repository => repository.AddCategoriesToActivity(It.IsAny<Guid>(), It.IsAny<IEnumerable<Guid>>()),
@@ -229,17 +233,20 @@ public class CreateWithCorrectionAsyncTests : ActivityServiceTestsBase
             .ToList();
         var capturedActivities = new List<Activity>();
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetByIdsAsync(It.Is<IEnumerable<Guid>>(ids =>
-                ids.OrderBy(id => id).SequenceEqual(resolutionActivityIds.OrderBy(id => id)))))
+            .Setup(repository => repository.GetByIdsAsync(
+                It.Is<IEnumerable<Guid>>(ids => ids.OrderBy(id => id).SequenceEqual(resolutionActivityIds.OrderBy(id => id))),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(activities);
         ActivityRepositoryMock.Setup(repository => repository.Add(It.IsAny<Activity>())).Callback<Activity>(capturedActivities.Add);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetCategoryIdsByActivityIdAsync(It.Is<Guid>(id => resolutionActivityIds.Contains(id))))
+            .Setup(repository => repository.GetCategoryIdsByActivityIdAsync(
+                It.Is<Guid>(id => resolutionActivityIds.Contains(id)), 
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
-        var result = await Service.CreateWithCorrectionAsync(request, journal.UserId);
+        var result = await Service.CreateWithCorrectionAsync(request, journal.UserId, CancellationToken.None);
 
         capturedActivities.Should().NotBeEmpty();
 
@@ -279,7 +286,7 @@ public class CreateWithCorrectionAsyncTests : ActivityServiceTestsBase
 
         journal.UpdatedAt.Should().BeAfter(currentJournalUpdatedTime);
 
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(), Times.Once);
+        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         ActivityRepositoryMock.Verify(repository => repository.Delete(It.IsAny<Activity>()), Times.Never);
         ActivityRepositoryMock.Verify(
             repository => repository.AddCategoriesToActivity(It.IsAny<Guid>(), It.IsAny<IEnumerable<Guid>>()),
@@ -349,21 +356,25 @@ public class CreateWithCorrectionAsyncTests : ActivityServiceTestsBase
             .ToList();
         var capturedActivities = new List<Activity>();
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetByIdsAsync(It.Is<IEnumerable<Guid>>(ids =>
-                ids.OrderBy(id => id).SequenceEqual(resolutionActivityIds.OrderBy(id => id)))))
+            .Setup(repository => repository.GetByIdsAsync(
+                It.Is<IEnumerable<Guid>>(ids => ids.OrderBy(id => id).SequenceEqual(resolutionActivityIds.OrderBy(id => id))), 
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(activities);
         ActivityRepositoryMock.Setup(repository => repository.Add(It.IsAny<Activity>())).Callback<Activity>(capturedActivities.Add);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetCategoryIdsByActivityIdAsync(It.Is<Guid>(id => resolutionActivityIds.Contains(id))))
+            .Setup(repository => repository.GetCategoryIdsByActivityIdAsync(
+                It.Is<Guid>(id => resolutionActivityIds.Contains(id)), 
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(clearedCategoryIds);
         CategoryRepositoryMock
-            .Setup(repository => repository.GetByIdsAsync(It.Is<IEnumerable<Guid>>(ids =>
-                ids.OrderBy(id => id).SequenceEqual(clearedCategoryIds.OrderBy(id => id)))))
+            .Setup(repository => repository.GetByIdsAsync(
+                It.Is<IEnumerable<Guid>>(ids => ids.OrderBy(id => id).SequenceEqual(clearedCategoryIds.OrderBy(id => id))), 
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(categories);
 
-        var result = await Service.CreateWithCorrectionAsync(request, userId);
+        var result = await Service.CreateWithCorrectionAsync(request, userId, CancellationToken.None);
 
         capturedActivities.Should().NotBeEmpty();
 
@@ -410,7 +421,7 @@ public class CreateWithCorrectionAsyncTests : ActivityServiceTestsBase
         ActivityRepositoryMock.Verify(
             repository => repository.AddCategoriesToActivity(It.IsAny<Guid>(), It.IsAny<IEnumerable<Guid>>()),
             Times.Exactly(capturedActivities.Count));
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(), Times.Once);
+        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         ActivityRepositoryMock.Verify(repository => repository.Delete(It.IsAny<Activity>()), Times.Never);
     }
 
@@ -430,14 +441,16 @@ public class CreateWithCorrectionAsyncTests : ActivityServiceTestsBase
         var currentJournalUpdatedTime = journal.UpdatedAt;
         var capturedActivities = new List<Activity>();
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetByIdsAsync(It.Is<IEnumerable<Guid>>(ids =>
-                ids.OrderBy(id => id).SequenceEqual(resolutions.Select(resolution => resolution.ActivityId).OrderBy(id => id)))))
+            .Setup(repository => repository.GetByIdsAsync(
+                It.Is<IEnumerable<Guid>>(ids => 
+                    ids.OrderBy(id => id).SequenceEqual(resolutions.Select(resolution => resolution.ActivityId).OrderBy(id => id))), 
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(activities);
         ActivityRepositoryMock.Setup(repository => repository.Add(It.IsAny<Activity>())).Callback<Activity>(capturedActivities.Add);
 
-        var result = await Service.CreateWithCorrectionAsync(request, journal.UserId);
+        var result = await Service.CreateWithCorrectionAsync(request, journal.UserId, CancellationToken.None);
 
         capturedActivities.Should().HaveCount(1);
 
@@ -456,7 +469,7 @@ public class CreateWithCorrectionAsyncTests : ActivityServiceTestsBase
         journal.UpdatedAt.Should().BeAfter(currentJournalUpdatedTime);
 
         activities.ForEach(activity => ActivityRepositoryMock.Verify(repository => repository.Delete(activity), Times.Once));
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(), Times.Once);
+        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         ActivityRepositoryMock.Verify(
             repository => repository.AddCategoriesToActivity(It.IsAny<Guid>(), It.IsAny<IEnumerable<Guid>>()),
             Times.Never);
@@ -486,11 +499,11 @@ public class CreateWithCorrectionAsyncTests : ActivityServiceTestsBase
             .ToList();
         var capturedActivities = new List<Activity>();
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync(journal);
-        ActivityRepositoryMock.Setup(repository => repository.GetByIdsAsync(new List<Guid>())).ReturnsAsync([]);
+        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
+        ActivityRepositoryMock.Setup(repository => repository.GetByIdsAsync(new List<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync([]);
         ActivityRepositoryMock.Setup(repository => repository.Add(It.IsAny<Activity>())).Callback<Activity>(capturedActivities.Add);
 
-        var result = await Service.CreateWithCorrectionAsync(request, journal.UserId);
+        var result = await Service.CreateWithCorrectionAsync(request, journal.UserId, CancellationToken.None);
 
         capturedActivities.Should().NotBeEmpty();
 
@@ -518,7 +531,7 @@ public class CreateWithCorrectionAsyncTests : ActivityServiceTestsBase
             options => options.WithoutStrictOrdering());
         journal.UpdatedAt.Should().BeAfter(currentJournalUpdatedTime);
 
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(), Times.Once);
+        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         ActivityRepositoryMock.Verify(repository => repository.Delete(It.IsAny<Activity>()), Times.Never);
         ActivityRepositoryMock.Verify(
             repository => repository.AddCategoriesToActivity(It.IsAny<Guid>(), It.IsAny<IEnumerable<Guid>>()),
@@ -556,12 +569,14 @@ public class CreateWithCorrectionAsyncTests : ActivityServiceTestsBase
             .ToList();
         var capturedActivities = new List<Activity>();
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync(journal);
-        ActivityRepositoryMock.Setup(repository => repository.GetByIdsAsync(new List<Guid>())).ReturnsAsync([]);
+        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
+        ActivityRepositoryMock.Setup(repository => repository.GetByIdsAsync(new List<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync([]);
         ActivityRepositoryMock.Setup(repository => repository.Add(It.IsAny<Activity>())).Callback<Activity>(capturedActivities.Add);
-        CategoryRepositoryMock.Setup(repository => repository.GetByIdsAsync(clearedCategoryIds)).ReturnsAsync(categories);
+        CategoryRepositoryMock
+            .Setup(repository => repository.GetByIdsAsync(clearedCategoryIds, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(categories);
 
-        var result = await Service.CreateWithCorrectionAsync(request, userId);
+        var result = await Service.CreateWithCorrectionAsync(request, userId, CancellationToken.None);
 
         capturedActivities.Should().NotBeEmpty();
 
@@ -595,7 +610,7 @@ public class CreateWithCorrectionAsyncTests : ActivityServiceTestsBase
         capturedActivities.ForEach(activity => ActivityRepositoryMock.Verify(
             repository => repository.AddCategoriesToActivity(activity.Id, clearedCategoryIds),
             Times.Once));
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(), Times.Once);
+        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         ActivityRepositoryMock.Verify(repository => repository.Delete(It.IsAny<Activity>()), Times.Never);
     }
 
@@ -666,17 +681,18 @@ public class CreateWithCorrectionAsyncTests : ActivityServiceTestsBase
         };
         var capturedActivities = new List<Activity>();
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetByIdsAsync(It.Is<IEnumerable<Guid>>(ids =>
-                ids.OrderBy(id => id).SequenceEqual(resolutionActivityIds.OrderBy(id => id)))))
+            .Setup(repository => repository.GetByIdsAsync(
+                It.Is<IEnumerable<Guid>>(ids => ids.OrderBy(id => id).SequenceEqual(resolutionActivityIds.OrderBy(id => id))), 
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync([activityToDelete, activityToSplit, activityToShift]);
         ActivityRepositoryMock.Setup(repository => repository.Add(It.IsAny<Activity>())).Callback<Activity>(capturedActivities.Add);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetCategoryIdsByActivityIdAsync(resolutions[1].ActivityId))
+            .Setup(repository => repository.GetCategoryIdsByActivityIdAsync(resolutions[1].ActivityId, It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
-        var result = await Service.CreateWithCorrectionAsync(request, journal.UserId);
+        var result = await Service.CreateWithCorrectionAsync(request, journal.UserId, CancellationToken.None);
 
         capturedActivities.Should().NotBeEmpty();
 
@@ -717,7 +733,7 @@ public class CreateWithCorrectionAsyncTests : ActivityServiceTestsBase
         journal.UpdatedAt.Should().BeAfter(currentJournalUpdatedTime);
 
         ActivityRepositoryMock.Verify(repository => repository.Delete(activityToDelete), Times.Once);
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(), Times.Once);
+        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         ActivityRepositoryMock.Verify(
             repository => repository.AddCategoriesToActivity(It.IsAny<Guid>(), It.IsAny<IEnumerable<Guid>>()),
             Times.Never);
@@ -728,7 +744,8 @@ public class CreateWithCorrectionAsyncTests : ActivityServiceTestsBase
         => await FluentActions
             .Awaiting(() => Service.CreateWithCorrectionAsync(
                 new ActivityWithCorrectionRequest(Guid.Empty, string.Empty, DateTime.MinValue, DateTime.MaxValue, [], [], []),
-                Guid.NewGuid()))
+                Guid.NewGuid(),
+                CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
 
@@ -738,10 +755,12 @@ public class CreateWithCorrectionAsyncTests : ActivityServiceTestsBase
         var request = new ActivityWithCorrectionRequest(Guid.NewGuid(), string.Empty, DateTime.MinValue, DateTime.MaxValue, [], [], []);
         var userId = Guid.NewGuid();
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync((Journal?)null);
+        JournalRepositoryMock
+            .Setup(repository => repository.GetByIdAsync(request.JournalId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Journal?)null);
 
         await FluentActions
-            .Awaiting(() => Service.CreateWithCorrectionAsync(request, Guid.NewGuid()))
+            .Awaiting(() => Service.CreateWithCorrectionAsync(request, Guid.NewGuid(), CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
     }
@@ -756,13 +775,13 @@ public class CreateWithCorrectionAsyncTests : ActivityServiceTestsBase
         var journal = new Journal(Guid.NewGuid(), userId, Faker.Lorem.Word());
         var request = new ActivityWithCorrectionRequest(journal.Id, string.Empty, DateTime.MinValue, DateTime.MaxValue, categoryIds, [], []);
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
         CategoryRepositoryMock
-            .Setup(repository => repository.GetByIdsAsync(It.IsAny<IEnumerable<Guid>>()))
+            .Setup(repository => repository.GetByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(categories.Skip(1));
 
         await FluentActions
-            .Awaiting(() => Service.CreateWithCorrectionAsync(request, userId))
+            .Awaiting(() => Service.CreateWithCorrectionAsync(request, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
     }
@@ -778,11 +797,13 @@ public class CreateWithCorrectionAsyncTests : ActivityServiceTestsBase
         var request = new ActivityWithCorrectionRequest(journal.Id, string.Empty, DateTime.MinValue, DateTime.MaxValue, categoryIds, [], []);
         categories[0] = new Category(categories[0].Id, Guid.NewGuid(), Faker.Lorem.Word(), "#000000");
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync(journal);
-        CategoryRepositoryMock.Setup(repository => repository.GetByIdsAsync(It.IsAny<IEnumerable<Guid>>())).ReturnsAsync(categories);
+        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
+        CategoryRepositoryMock
+            .Setup(repository => repository.GetByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(categories);
 
         await FluentActions
-            .Awaiting(() => Service.CreateWithCorrectionAsync(request, userId))
+            .Awaiting(() => Service.CreateWithCorrectionAsync(request, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
     }
@@ -803,13 +824,13 @@ public class CreateWithCorrectionAsyncTests : ActivityServiceTestsBase
             .ToList();
         var request = new ActivityWithCorrectionRequest(journal.Id, string.Empty, DateTime.MinValue, requestEndTime, [], resolutions, []);
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetByIdsAsync(It.IsAny<IEnumerable<Guid>>()))
+            .Setup(repository => repository.GetByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(activities.Skip(1));
 
         await FluentActions
-            .Awaiting(() => Service.CreateWithCorrectionAsync(request, journal.UserId))
+            .Awaiting(() => Service.CreateWithCorrectionAsync(request, journal.UserId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
     }
@@ -830,13 +851,13 @@ public class CreateWithCorrectionAsyncTests : ActivityServiceTestsBase
             .ToList();
         var request = new ActivityWithCorrectionRequest(journal.Id, string.Empty, DateTime.MinValue, requestEndTime, [], resolutions, []);
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync(journal);
+        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
         ActivityRepositoryMock
-            .Setup(repository => repository.GetByIdsAsync(It.IsAny<IEnumerable<Guid>>()))
+            .Setup(repository => repository.GetByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(activities.Skip(1));
 
         await FluentActions
-            .Awaiting(() => Service.CreateWithCorrectionAsync(request, journal.UserId))
+            .Awaiting(() => Service.CreateWithCorrectionAsync(request, journal.UserId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
     }

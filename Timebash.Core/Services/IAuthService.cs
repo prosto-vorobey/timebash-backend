@@ -13,15 +13,17 @@ public interface IAuthService
     /// Registers a new user account and returns the created profile.
     /// </summary>
     /// <param name="registerRequest">The registration data.</param>
+    /// <param name="cancellationToken">A token to cancel the request if the client disconnects.</param>
     /// <returns>The newly created user profile.</returns>
     /// <exception cref="ResourceConflictException">Thrown when another user already has the requested name or email.</exception>
-    Task<UserResponse> RegisterAsync(RegisterRequest registerRequest);
+    Task<UserResponse> RegisterAsync(RegisterRequest registerRequest, CancellationToken cancellationToken);
 
     /// <summary>
     /// Authenticates a user and returns a JWT access token.
     /// </summary>
     /// <param name="loginRequest">Login credentials.</param>
+    /// <param name="cancellationToken">A token to cancel the request if the client disconnects.</param>
     /// <returns>A JWT token for use in authorized requests.</returns>
     /// <exception cref="UnauthorizedException">Thrown when the login or password is incorrect.</exception>
-    Task<LoginResponse> LoginAsync(LoginRequest loginRequest);
+    Task<LoginResponse> LoginAsync(LoginRequest loginRequest, CancellationToken cancellationToken);
 }

@@ -14,13 +14,30 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
         {
             await _next(context);
         }
+        catch (OperationCanceledException exception)
+        {
+            _logger.LogInformation(
+                exception,
+                "Request {RequestMethod} {RequestPath} was cancelled for user {UserId}",
+                context.Request.Method, 
+                context.Request.Path,
+                context.User?.FindFirstValue(ClaimTypes.NameIdentifier));
+        }
         catch (Exception exception)
         {
-            LogError(
+            if (exception is DomainExceptionBase) _logger.LogWarning(
                 exception,
-                context.User?.FindFirstValue(ClaimTypes.NameIdentifier),
-                context.Request.Path,
-                context.Request.Method);
+                "Client error for request {RequestMethod} {RequestPath} from user: {UserId}",
+                context.Request.Method, 
+                context.Request.Path, 
+                context.User?.FindFirstValue(ClaimTypes.NameIdentifier));
+            else _logger.LogError(
+                exception,
+                "Unhandled exception for request {RequestMethod} {RequestPath} from user: {UserId}",
+                context.Request.Method, 
+                context.Request.Path, 
+                context.User?.FindFirstValue(ClaimTypes.NameIdentifier));
+
             await HandleExceptionAsync(context, exception);
         }
     }
@@ -78,17 +95,5 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
         }
         
         return (status, title, detail, extensions);
-    }
-
-    private void LogError(Exception exception, string? userId, PathString requestPath, string? requestMethod)
-    {
-        if (exception is DomainExceptionBase) _logger.LogWarning(
-            exception,
-            "Client error for request {RequestMethod} {RequestPath} from user: {UserId}",
-            requestMethod, requestPath, userId);
-        else _logger.LogError(
-            exception,
-            "Unhandled exception for request {RequestMethod} {RequestPath} from user: {UserId}",
-            requestMethod, requestPath, userId);
     }
 }

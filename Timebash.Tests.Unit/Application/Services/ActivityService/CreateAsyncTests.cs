@@ -23,13 +23,17 @@ public class CreateAsyncTests : ActivityServiceTestsBase
         var request = new ActivityRequest(journal.Id, string.Empty, DateTime.MinValue, DateTime.MaxValue, categoryIds);
         Activity? capturedActivity = null;
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync(journal);
-        ActivityRepositoryMock.Setup(repository => repository.Add(It.IsAny<Activity>()))
+        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
+        ActivityRepositoryMock
+            .Setup(repository => repository.Add(It.IsAny<Activity>()))
             .Callback<Activity>(activity => capturedActivity = activity);
-        CategoryRepositoryMock.Setup(repository => repository.GetByIdsAsync(It.Is<IEnumerable<Guid>>(ids =>
-            ids.OrderBy(id => id).SequenceEqual(clearedCategoryIds.OrderBy(id => id))))).ReturnsAsync(categories);
+        CategoryRepositoryMock
+            .Setup(repository => repository.GetByIdsAsync(
+                It.Is<IEnumerable<Guid>>(ids => ids.OrderBy(id => id).SequenceEqual(clearedCategoryIds.OrderBy(id => id))),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(categories);
 
-        var result = await Service.CreateAsync(request, userId);
+        var result = await Service.CreateAsync(request, userId, CancellationToken.None);
 
         capturedActivity.Should().NotBeNull();
         capturedActivity.Id.Should().NotBeEmpty();
@@ -44,7 +48,7 @@ public class CreateAsyncTests : ActivityServiceTestsBase
 
         ActivityRepositoryMock.Verify(repository => repository.AddCategoriesToActivity(capturedActivity.Id, It.Is<IEnumerable<Guid>>(ids =>
             ids.OrderBy(id => id).SequenceEqual(clearedCategoryIds.OrderBy(id => id)))), Times.Once);
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(), Times.Once);
+        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Theory]
@@ -56,11 +60,12 @@ public class CreateAsyncTests : ActivityServiceTestsBase
         var request = new ActivityRequest(journal.Id, string.Empty, DateTime.MinValue, DateTime.MaxValue, categoryIds);
         Activity? capturedActivity = null;
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync(journal);
-        ActivityRepositoryMock.Setup(repository => repository.Add(It.IsAny<Activity>()))
+        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
+        ActivityRepositoryMock
+            .Setup(repository => repository.Add(It.IsAny<Activity>()))
             .Callback<Activity>(activity => capturedActivity = activity);
 
-        var result = await Service.CreateAsync(request, journal.UserId);
+        var result = await Service.CreateAsync(request, journal.UserId, CancellationToken.None);
 
         capturedActivity.Should().NotBeNull();
         capturedActivity.Id.Should().NotBeEmpty();
@@ -73,7 +78,7 @@ public class CreateAsyncTests : ActivityServiceTestsBase
         result.Should().BeEquivalentTo(capturedActivity.ToResponse());
         journal.UpdatedAt.Should().BeAfter(currentUpdatedTime);
 
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(), Times.Once);
+        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         ActivityRepositoryMock.Verify(
             repository => repository.AddCategoriesToActivity(capturedActivity.Id, It.IsAny<IEnumerable<Guid>>()),
             Times.Never);
@@ -83,7 +88,8 @@ public class CreateAsyncTests : ActivityServiceTestsBase
     public async Task Create_EmptyJournalId_ShouldThrowBadRequest()
         => await FluentActions
             .Awaiting(() => Service.CreateAsync(
-                new ActivityRequest(Guid.Empty, string.Empty, DateTime.MinValue, DateTime.MaxValue, []), Guid.NewGuid()))
+                new ActivityRequest(Guid.Empty, string.Empty, DateTime.MinValue, DateTime.MaxValue, []), Guid.NewGuid(),
+                CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
 
@@ -93,10 +99,12 @@ public class CreateAsyncTests : ActivityServiceTestsBase
         var request = new ActivityRequest(Guid.NewGuid(), string.Empty, DateTime.MinValue, DateTime.MaxValue, []);
         var userId = Guid.NewGuid();
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync((Journal?)null);
+        JournalRepositoryMock
+            .Setup(repository => repository.GetByIdAsync(request.JournalId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Journal?)null);
 
         await FluentActions
-            .Awaiting(() => Service.CreateAsync(request, userId))
+            .Awaiting(() => Service.CreateAsync(request, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
     }
@@ -108,12 +116,13 @@ public class CreateAsyncTests : ActivityServiceTestsBase
         var journal = new Journal(Guid.NewGuid(), userId, Faker.Lorem.Word());
         var request = new ActivityRequest(journal.Id, string.Empty, DateTime.MinValue, DateTime.MaxValue, categoryIds);
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync(journal);
-        CategoryRepositoryMock.Setup(repository => repository.GetByIdsAsync(It.IsAny<IEnumerable<Guid>>()))
+        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
+        CategoryRepositoryMock
+            .Setup(repository => repository.GetByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(categories.Skip(1));
 
         await FluentActions
-            .Awaiting(() => Service.CreateAsync(request, userId))
+            .Awaiting(() => Service.CreateAsync(request, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
     }
@@ -126,11 +135,13 @@ public class CreateAsyncTests : ActivityServiceTestsBase
         var request = new ActivityRequest(journal.Id, string.Empty, DateTime.MinValue, DateTime.MaxValue, categoryIds);
         categories[0] = new Category(categories[0].Id, Guid.NewGuid(), Faker.Lorem.Word(), "#000000");
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId)).ReturnsAsync(journal);
-        CategoryRepositoryMock.Setup(repository => repository.GetByIdsAsync(It.IsAny<IEnumerable<Guid>>())).ReturnsAsync(categories);
+        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(request.JournalId, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
+        CategoryRepositoryMock
+            .Setup(repository => repository.GetByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(categories);
 
         await FluentActions
-            .Awaiting(() => Service.CreateAsync(request, userId))
+            .Awaiting(() => Service.CreateAsync(request, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
     }

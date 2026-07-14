@@ -25,16 +25,21 @@ public class JournalService(
     private readonly IUserSettingsRepository _userSettingsRepository = userSettingsRepository;
     private readonly IActivityQueryService _queryService = queryService;
 
-    public async Task<JournalResponse> GetByIdAsync(Guid id, Guid userId)
-        => (await EntityAccessGuard.EnsureJournalAccessAsync(_journalRepository, id, userId)).ToResponse();
+    public async Task<JournalResponse> GetByIdAsync(Guid id, Guid userId, CancellationToken cancellationToken)
+        => (await EntityAccessGuard.EnsureJournalAccessAsync(_journalRepository, id, userId, cancellationToken)).ToResponse();
 
-    public async Task<ActivitiesListResponse> GetActivitiesByJournalIdAsync(Guid id, DateTime? start, DateTime? end, Guid userId)
+    public async Task<ActivitiesListResponse> GetActivitiesByJournalIdAsync(
+        Guid id, 
+        DateTime? start, 
+        DateTime? end, 
+        Guid userId, 
+        CancellationToken cancellationToken)
     {
-        await EntityAccessGuard.ValidateJournalAccessAsync(_journalRepository, id, userId);
+        await EntityAccessGuard.ValidateJournalAccessAsync(_journalRepository, id, userId, cancellationToken);
 
         var activities = start is null && end is null
-            ? await _activityRepository.GetByJournalIdAsync(id)
-            : await _queryService.GetActivitiesForJournalAsync(id, start, end, ActivityDateFilterMode.ByStartTime).ToListAsync();
+            ? await _activityRepository.GetByJournalIdAsync(id, cancellationToken)
+            : await _queryService.GetActivitiesForJournalAsync(id, start, end, ActivityDateFilterMode.ByStartTime).ToListAsync(cancellationToken);
 
         return new ActivitiesListResponse(
             [.. activities
@@ -43,42 +48,47 @@ public class JournalService(
         );
     }
 
-    public async Task<JournalResponse> CreateAsync(JournalRequest journalRequest, Guid userId)
+    public async Task<JournalResponse> CreateAsync(JournalRequest journalRequest, Guid userId, CancellationToken cancellationToken)
     {
         var journal = journalRequest.ToJournal(Guid.NewGuid(), userId);
 
         _journalRepository.Add(journal);
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return journal.ToResponse();
     }
 
-    public async Task<bool> UpdateAsync(Guid id, JournalRequest journalRequest, Guid userId)
+    public async Task<bool> UpdateAsync(Guid id, JournalRequest journalRequest, Guid userId, CancellationToken cancellationToken)
     {
-        var journal = await EntityAccessGuard.EnsureJournalAccessAsync(_journalRepository, id, userId);
+        var journal = await EntityAccessGuard.EnsureJournalAccessAsync(_journalRepository, id, userId, cancellationToken);
         if (!journal.ApplyUpdate(journalRequest)) return false;
         
         journal.UpdatedAt = DateTime.UtcNow;
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return true;
     }
 
-    public async Task DeleteAsync(Guid id, Guid userId)
+    public async Task DeleteAsync(Guid id, Guid userId, CancellationToken cancellationToken)
     {
-        var journal = await EntityAccessGuard.EnsureJournalAccessAsync(_journalRepository, id, userId);
-        var userSettings = await _userSettingsRepository.GetByIdAsync(journal.UserId) ?? throw new NotFoundException();
+        var journal = await EntityAccessGuard.EnsureJournalAccessAsync(_journalRepository, id, userId, cancellationToken);
+        var userSettings = await _userSettingsRepository.GetByIdAsync(journal.UserId, cancellationToken) ?? throw new NotFoundException();
         if (userSettings.DefaultJournalId == id) throw new ConflictException("Unpossible to delete the default journal");
 
         _journalRepository.Delete(journal);
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return;
     }
 
-    public async Task<ConflictCorrectionsListResponse> GetTimeCorrectionConflictsAsync(Guid id, DateTime startTime, DateTime endTime, Guid userId)
+    public async Task<ConflictCorrectionsListResponse> GetTimeCorrectionConflictsAsync(
+        Guid id, 
+        DateTime startTime, 
+        DateTime endTime, 
+        Guid userId, 
+        CancellationToken cancellationToken)
     {
-        await EntityAccessGuard.ValidateJournalAccessAsync(_journalRepository, id, userId);
+        await EntityAccessGuard.ValidateJournalAccessAsync(_journalRepository, id, userId, cancellationToken);
 
         var truncatedStart = startTime.TruncateToSecond();
         var truncatedEnd = endTime.TruncateToSecond();
@@ -87,7 +97,7 @@ public class JournalService(
         var isPreviousAdjusted = false;
         var isNextAdjusted = false;
 
-        foreach (var overlap in await _activityRepository.GetOverlappingActivitiesAsync(id, truncatedStart, truncatedEnd))
+        foreach (var overlap in await _activityRepository.GetOverlappingActivitiesAsync(id, truncatedStart, truncatedEnd, cancellationToken))
         {
             CorrectionOptionBase? currentActivityCorrection = null;
             CorrectionOptionBase? addedActivityCorrection = null;
@@ -146,7 +156,7 @@ public class JournalService(
 
         if (!isPreviousAdjusted)
         {
-            var previous = await _activityRepository.GetPreviousActivityAsync(id, truncatedStart);
+            var previous = await _activityRepository.GetPreviousActivityAsync(id, truncatedStart, cancellationToken);
             if (previous is not null && previous.EndTime != truncatedStart)
             {
                 conflictCorrections.Insert(0, new
@@ -163,7 +173,7 @@ public class JournalService(
 
         if (!isNextAdjusted)
         {
-            var next = await _activityRepository.GetNextActivityAsync(id, truncatedEnd);
+            var next = await _activityRepository.GetNextActivityAsync(id, truncatedEnd, cancellationToken);
             if (next is not null && next.StartTime != truncatedEnd)
             {
                 conflictCorrections.Add(new

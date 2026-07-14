@@ -17,6 +17,7 @@ public class JournalsController(ICurrentUserService currentUserService, IJournal
     /// Retrieves a journal by its unique identifier.
     /// </summary>
     /// <param name="id">The journal ID.</param>
+    /// <param name="cancellationToken">A token to cancel the request if the client disconnects.</param>
     /// <returns>The requested journal.</returns>
     /// <response code="200">The journal was found and returned.</response>
     /// <response code="400">The provided ID is invalid, such as empty GUID.</response>
@@ -27,8 +28,8 @@ public class JournalsController(ICurrentUserService currentUserService, IJournal
     [ProducesResponseType(typeof(JournalResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<JournalResponse>> GetById(Guid id)
-        => Ok(await _journalService.GetByIdAsync(id, _currentUserService.GetCurrentUserId()));
+    public async Task<ActionResult<JournalResponse>> GetById(Guid id, CancellationToken cancellationToken = default)
+        => Ok(await _journalService.GetByIdAsync(id, _currentUserService.GetCurrentUserId(), cancellationToken));
 
     /// <summary>
     /// Returns all activities that belong to the specified journal.
@@ -40,6 +41,7 @@ public class JournalsController(ICurrentUserService currentUserService, IJournal
     /// <param name="end">
     /// Optional end of the time range (UTC). If <c>null</c>, activities up to the latest available moment are included.
     /// </param>
+    /// <param name="cancellationToken">A token to cancel the request if the client disconnects.</param>
     /// <returns>A collection of activities linked to the journal.</returns>
     /// <response code="200">Activities were successfully retrieved.</response>
     /// <response code="400">The provided ID or time range is invalid.</response>
@@ -51,13 +53,14 @@ public class JournalsController(ICurrentUserService currentUserService, IJournal
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ActivitiesListResponse>> GetActivitiesByJournalId(Guid id,
-        [FromQuery] DateTime? start = null, [FromQuery] DateTime? end = null)
-        => Ok(await _journalService.GetActivitiesByJournalIdAsync(id, start, end, _currentUserService.GetCurrentUserId()));
+        [FromQuery] DateTime? start = null, [FromQuery] DateTime? end = null, CancellationToken cancellationToken = default)
+        => Ok(await _journalService.GetActivitiesByJournalIdAsync(id, start, end, _currentUserService.GetCurrentUserId(), cancellationToken));
 
     /// <summary>
     /// Creates a new journal.
     /// </summary>
     /// <param name="journalRequest">The journal data.</param>
+    /// <param name="cancellationToken">A token to cancel the request if the client disconnects.</param>
     /// <returns>The newly created journal.</returns>
     /// <response code="201">The journal was created successfully. The response body contains the journal data.</response>
     /// <response code="400">The request body is invalid or validation failed.</response>
@@ -66,9 +69,9 @@ public class JournalsController(ICurrentUserService currentUserService, IJournal
     [HttpPost]
     [ProducesResponseType(typeof(JournalResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult> Create(JournalRequest journalRequest)
+    public async Task<ActionResult> Create(JournalRequest journalRequest, CancellationToken cancellationToken = default)
     {
-        var response = await _journalService.CreateAsync(journalRequest, _currentUserService.GetCurrentUserId());
+        var response = await _journalService.CreateAsync(journalRequest, _currentUserService.GetCurrentUserId(), cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id = response.Id }, response);
     }
 
@@ -77,6 +80,7 @@ public class JournalsController(ICurrentUserService currentUserService, IJournal
     /// </summary>
     /// <param name="id">The journal ID to update.</param>
     /// <param name="journalRequest">The new journal data.</param>
+    /// <param name="cancellationToken">A token to cancel the request if the client disconnects.</param>
     /// <returns>No content when the update is successful.</returns>
     /// <response code="204">The journal was updated successfully.</response>
     /// <response code="400">The provided ID or request body is invalid.</response>
@@ -87,9 +91,9 @@ public class JournalsController(ICurrentUserService currentUserService, IJournal
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> Update(Guid id, JournalRequest journalRequest)
+    public async Task<ActionResult> Update(Guid id, JournalRequest journalRequest, CancellationToken cancellationToken = default)
     {
-        var changed = await _journalService.UpdateAsync(id, journalRequest, _currentUserService.GetCurrentUserId());
+        var changed = await _journalService.UpdateAsync(id, journalRequest, _currentUserService.GetCurrentUserId(), cancellationToken);
         if (!changed) HttpContext.Response.Headers["X-No-Changes"] = "true";
 
         return NoContent();
@@ -99,6 +103,7 @@ public class JournalsController(ICurrentUserService currentUserService, IJournal
     /// Deletes the specified journal.
     /// </summary>
     /// <param name="id">The journal ID to delete.</param>
+    /// <param name="cancellationToken">A token to cancel the request if the client disconnects.</param>
     /// <returns>No content when the deletion succeeds.</returns>
     /// <response code="204">The journal was deleted successfully.</response>
     /// <response code="400">The provided ID is invalid, such as empty GUID.</response>
@@ -111,9 +116,9 @@ public class JournalsController(ICurrentUserService currentUserService, IJournal
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    public async Task<ActionResult> Delete(Guid id)
+    public async Task<ActionResult> Delete(Guid id, CancellationToken cancellationToken = default)
     {
-        await _journalService.DeleteAsync(id, _currentUserService.GetCurrentUserId());
+        await _journalService.DeleteAsync(id, _currentUserService.GetCurrentUserId(), cancellationToken);
         return NoContent();
     }
 
@@ -123,6 +128,7 @@ public class JournalsController(ICurrentUserService currentUserService, IJournal
     /// <param name="id">The journal ID.</param>
     /// <param name="startTime">The start of the time range to check against existing activities (UTC).</param>
     /// <param name="endTime">The end of the time range to check against existing activities (UTC).</param>
+    /// <param name="cancellationToken">A token to cancel the request if the client disconnects.</param>
     /// <returns>A collection of conflict correction suggestions for each overlapping activity.</returns>
     /// <response code="200">Conflict suggestions successfully generated.</response>
     /// <response code="400">The provided ID or time range is invalid.</response>
@@ -136,6 +142,12 @@ public class JournalsController(ICurrentUserService currentUserService, IJournal
     public async Task<ActionResult<ConflictCorrectionsListResponse>> GetTimeCorrectionConflicts(
         Guid id,
         [FromQuery] DateTime startTime,
-        [FromQuery] DateTime endTime)
-        => Ok(await _journalService.GetTimeCorrectionConflictsAsync(id, startTime, endTime, _currentUserService.GetCurrentUserId()));
+        [FromQuery] DateTime endTime,
+        CancellationToken cancellationToken = default)
+        => Ok(await _journalService.GetTimeCorrectionConflictsAsync(
+            id, 
+            startTime, 
+            endTime, 
+            _currentUserService.GetCurrentUserId(), 
+            cancellationToken));
 }

@@ -23,21 +23,32 @@ public class UpdateActivityCategoriesAsyncTests : ActivityServiceTestsBase
         var currentUpdatedTime = activity.UpdatedAt;
         var request = new ActivityCategoriesRequest(categoryIds);
 
-        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id)).ReturnsAsync(activity);
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId)).ReturnsAsync(true);
-        ActivityRepositoryMock.Setup(repository => repository.GetCategoryIdsByActivityIdAsync(activity.Id)).ReturnsAsync([]);
-        CategoryRepositoryMock.Setup(repository => repository.GetByIdsAsync(It.Is<IEnumerable<Guid>>(ids =>
-            ids.OrderBy(id => id).SequenceEqual(clearedCategoryIds.OrderBy(id => id))))).ReturnsAsync(categories);
+        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id, It.IsAny<CancellationToken>())).ReturnsAsync(activity);
+        JournalRepositoryMock
+            .Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        ActivityRepositoryMock
+            .Setup(repository => repository.GetCategoryIdsByActivityIdAsync(activity.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+        CategoryRepositoryMock
+            .Setup(repository => repository.GetByIdsAsync(
+                It.Is<IEnumerable<Guid>>(ids => ids.OrderBy(id => id).SequenceEqual(clearedCategoryIds.OrderBy(id => id))), 
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(categories);
 
-        var result = await Service.UpdateActivityCategoriesAsync(activity.Id, request, userId);
+        var result = await Service.UpdateActivityCategoriesAsync(activity.Id, request, userId, CancellationToken.None);
 
         result.Should().BeTrue();
         activity.UpdatedAt.Should().BeAfter(currentUpdatedTime);
 
-        ActivityRepositoryMock.Verify(repository => repository.AddCategoriesToActivity(activity.Id, It.Is<IEnumerable<Guid>>(ids =>
-            ids.OrderBy(id => id).SequenceEqual(clearedCategoryIds.OrderBy(id => id)))), Times.Once);
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(), Times.Once);
-        ActivityRepositoryMock.Verify(repository => repository.ClearActivityCategoriesAsync(activity.Id), Times.Never);
+        ActivityRepositoryMock.Verify(
+            repository => repository.AddCategoriesToActivity(activity.Id, It.Is<IEnumerable<Guid>>(ids =>
+                ids.OrderBy(id => id).SequenceEqual(clearedCategoryIds.OrderBy(id => id)))), 
+            Times.Once);
+        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        ActivityRepositoryMock.Verify(
+            repository => repository.ClearActivityCategoriesAsync(activity.Id, It.IsAny<CancellationToken>()), 
+            Times.Never);
     }
 
     [Fact]
@@ -48,17 +59,21 @@ public class UpdateActivityCategoriesAsyncTests : ActivityServiceTestsBase
         var currentUpdatedTime = activity.UpdatedAt;
         var request = new ActivityCategoriesRequest([]);
 
-        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id)).ReturnsAsync(activity);
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId)).ReturnsAsync(true);
-        ActivityRepositoryMock.Setup(repository => repository.GetCategoryIdsByActivityIdAsync(activity.Id)).ReturnsAsync([Guid.NewGuid()]);
+        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id, It.IsAny<CancellationToken>())).ReturnsAsync(activity);
+        JournalRepositoryMock
+            .Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        ActivityRepositoryMock
+            .Setup(repository => repository.GetCategoryIdsByActivityIdAsync(activity.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([Guid.NewGuid()]);
 
-        var result = await Service.UpdateActivityCategoriesAsync(activity.Id, request, userId);
+        var result = await Service.UpdateActivityCategoriesAsync(activity.Id, request, userId, CancellationToken.None);
 
         result.Should().BeTrue();
         activity.UpdatedAt.Should().BeAfter(currentUpdatedTime);
 
-        ActivityRepositoryMock.Verify(repository => repository.ClearActivityCategoriesAsync(activity.Id), Times.Once);
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.ClearActivityCategoriesAsync(activity.Id, It.IsAny<CancellationToken>()), Times.Once);
+        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         ActivityRepositoryMock.Verify(repository => repository.AddCategoryToActivity(activity.Id, It.IsAny<Guid>()), Times.Never);
     }
 
@@ -72,24 +87,34 @@ public class UpdateActivityCategoriesAsyncTests : ActivityServiceTestsBase
         var currentUpdateTime = activity.UpdatedAt;
         var request = new ActivityCategoriesRequest(categoryIds);
 
-        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id)).ReturnsAsync(activity);
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId)).ReturnsAsync(true);
-        ActivityRepositoryMock.Setup(repository => repository.GetCategoryIdsByActivityIdAsync(activity.Id)).ReturnsAsync(clearedCategoryIds);
+        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id, It.IsAny<CancellationToken>())).ReturnsAsync(activity);
+        JournalRepositoryMock
+            .Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        ActivityRepositoryMock
+            .Setup(repository => repository.GetCategoryIdsByActivityIdAsync(activity.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(clearedCategoryIds);
 
-        var result = await Service.UpdateActivityCategoriesAsync(activity.Id, request, userId);
+        var result = await Service.UpdateActivityCategoriesAsync(activity.Id, request, userId, CancellationToken.None);
 
         result.Should().BeFalse();
         activity.UpdatedAt.Should().Be(currentUpdateTime);
 
         ActivityRepositoryMock.Verify(repository => repository.AddCategoryToActivity(activity.Id, It.IsAny<Guid>()), Times.Never);
-        ActivityRepositoryMock.Verify(repository => repository.ClearActivityCategoriesAsync(activity.Id), Times.Never);
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(), Times.Never);
+        ActivityRepositoryMock.Verify(
+            repository => repository.ClearActivityCategoriesAsync(activity.Id, It.IsAny<CancellationToken>()), 
+            Times.Never);
+        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
     public async Task UpdateActivityCategories_EmptyActivityId_ShouldThrowBadRequest()
         => await FluentActions
-            .Awaiting(() => Service.UpdateActivityCategoriesAsync(Guid.Empty, new ActivityCategoriesRequest([]), Guid.NewGuid()))
+            .Awaiting(() => Service.UpdateActivityCategoriesAsync(
+                Guid.Empty, 
+                new ActivityCategoriesRequest([]), 
+                Guid.NewGuid(), 
+                CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
 
@@ -97,10 +122,14 @@ public class UpdateActivityCategoriesAsyncTests : ActivityServiceTestsBase
     public async Task UpdateActivityCategories_ActivityNotFound_ShouldThrowNotFound()
     {
         var activityId = Guid.NewGuid();
-        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activityId)).ReturnsAsync((Activity?)null);
+        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activityId, It.IsAny<CancellationToken>())).ReturnsAsync((Activity?)null);
 
         await FluentActions
-            .Awaiting(() => Service.UpdateActivityCategoriesAsync(activityId, new ActivityCategoriesRequest([]), Guid.NewGuid()))
+            .Awaiting(() => Service.UpdateActivityCategoriesAsync(
+                activityId, 
+                new ActivityCategoriesRequest([]), 
+                Guid.NewGuid(), 
+                CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
     }
@@ -115,11 +144,13 @@ public class UpdateActivityCategoriesAsyncTests : ActivityServiceTestsBase
                 .ToList();
         var request = new ActivityCategoriesRequest(categoryIds);
 
-        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id)).ReturnsAsync(activity);
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId)).ReturnsAsync(true);
+        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id, It.IsAny<CancellationToken>())).ReturnsAsync(activity);
+        JournalRepositoryMock
+            .Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
 
         await FluentActions
-            .Awaiting(() => Service.UpdateActivityCategoriesAsync(activity.Id, request, userId))
+            .Awaiting(() => Service.UpdateActivityCategoriesAsync(activity.Id, request, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
     }
@@ -134,12 +165,16 @@ public class UpdateActivityCategoriesAsyncTests : ActivityServiceTestsBase
         var activity = new Activity(Guid.NewGuid(), Guid.NewGuid(), DateTime.MinValue, DateTime.MaxValue);
         var request = new ActivityCategoriesRequest(categoryIds);
 
-        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id)).ReturnsAsync(activity);
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId)).ReturnsAsync(true);
-        CategoryRepositoryMock.Setup(repository => repository.GetByIdsAsync(It.IsAny<List<Guid>>())).ReturnsAsync(categories.Skip(1));
+        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id, It.IsAny<CancellationToken>())).ReturnsAsync(activity);
+        JournalRepositoryMock
+            .Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        CategoryRepositoryMock
+            .Setup(repository => repository.GetByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(categories.Skip(1));
 
         await FluentActions
-            .Awaiting(() => Service.UpdateActivityCategoriesAsync(activity.Id, request, userId))
+            .Awaiting(() => Service.UpdateActivityCategoriesAsync(activity.Id, request, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
     }
@@ -155,12 +190,16 @@ public class UpdateActivityCategoriesAsyncTests : ActivityServiceTestsBase
         categories[0] = new Category(categories[0].Id, Guid.NewGuid(), Faker.Lorem.Word(), "#000000");
         var request = new ActivityCategoriesRequest(categoryIds);
 
-        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id)).ReturnsAsync(activity);
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId)).ReturnsAsync(true);
-        CategoryRepositoryMock.Setup(repository => repository.GetByIdsAsync(It.IsAny<List<Guid>>())).ReturnsAsync(categories);
+        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id, It.IsAny<CancellationToken>())).ReturnsAsync(activity);
+        JournalRepositoryMock
+            .Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        CategoryRepositoryMock
+            .Setup(repository => repository.GetByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(categories);
 
         await FluentActions
-            .Awaiting(() => Service.UpdateActivityCategoriesAsync(activity.Id, request, userId))
+            .Awaiting(() => Service.UpdateActivityCategoriesAsync(activity.Id, request, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
     }

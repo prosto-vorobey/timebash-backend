@@ -18,15 +18,19 @@ public class GetCategoryStatisticAsyncTests : StatisticServiceTestsBase
     {
         var expected = new CategoryStatisticResponse(expectedTime);
 
-        CategoryRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(category.Id, category.UserId)).ReturnsAsync(true);
+        CategoryRepositoryMock
+            .Setup(repository => repository.IsUserLinkedAsync(category.Id, category.UserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
         ActivityQueryServiceMock
             .Setup(service => service.GetActivitiesForCategoryAsync(category.Id, null, null))
             .Returns(activities.ToAsyncEnumerable());
 
-        var result = await Service.GetCategoryStatisticAsync(category.Id, null, null, category.UserId);
+        var result = await Service.GetCategoryStatisticAsync(category.Id, null, null, category.UserId, CancellationToken.None);
         result.Should().BeEquivalentTo(expected);
 
-        CategoryRepositoryMock.Verify(repository => repository.IsUserLinkedAsync(category.Id, category.UserId), Times.Once);
+        CategoryRepositoryMock.Verify(
+            repository => repository.IsUserLinkedAsync(category.Id, category.UserId, It.IsAny<CancellationToken>()), 
+            Times.Once);
         ActivityQueryServiceMock.Verify(Service => Service.GetActivitiesForCategoryAsync(category.Id, null, null), Times.Once);
     }
 
@@ -39,15 +43,19 @@ public class GetCategoryStatisticAsyncTests : StatisticServiceTestsBase
         var (activities, expectedTime) = CategoryStatisticScenarioBuilder.GetDataWithStartDate(category, startDate, DurationSecond);
         var expected = new CategoryStatisticResponse(expectedTime);
         
-        CategoryRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(category.Id, category.UserId)).ReturnsAsync(true);
+        CategoryRepositoryMock
+            .Setup(repository => repository.IsUserLinkedAsync(category.Id, category.UserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
         ActivityQueryServiceMock
             .Setup(service => service.GetActivitiesForCategoryAsync(category.Id, startDate, null))
             .Returns(activities.ToAsyncEnumerable());
 
-        var result = await Service.GetCategoryStatisticAsync(category.Id, startDate, null, category.UserId);
+        var result = await Service.GetCategoryStatisticAsync(category.Id, startDate, null, category.UserId, CancellationToken.None);
         result.Should().BeEquivalentTo(expected);
 
-        CategoryRepositoryMock.Verify(repository => repository.IsUserLinkedAsync(category.Id, category.UserId), Times.Once);
+        CategoryRepositoryMock.Verify(
+            repository => repository.IsUserLinkedAsync(category.Id, category.UserId, It.IsAny<CancellationToken>()), 
+            Times.Once);
         ActivityQueryServiceMock.Verify(Service => Service.GetActivitiesForCategoryAsync(category.Id, startDate, null), Times.Once);
     }
 
@@ -60,15 +68,19 @@ public class GetCategoryStatisticAsyncTests : StatisticServiceTestsBase
         var (activities, expectedTime) = CategoryStatisticScenarioBuilder.GetDataWithEndDate(category, endDate, DurationSecond);
         var expected = new CategoryStatisticResponse(expectedTime);
         
-        CategoryRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(category.Id, category.UserId)).ReturnsAsync(true);
+        CategoryRepositoryMock
+            .Setup(repository => repository.IsUserLinkedAsync(category.Id, category.UserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
         ActivityQueryServiceMock
             .Setup(service => service.GetActivitiesForCategoryAsync(category.Id, null, endDate))
             .Returns(activities.ToAsyncEnumerable());
 
-        var result = await Service.GetCategoryStatisticAsync(category.Id, null, endDate, category.UserId);
+        var result = await Service.GetCategoryStatisticAsync(category.Id, null, endDate, category.UserId, CancellationToken.None);
         result.Should().BeEquivalentTo(expected);
 
-        CategoryRepositoryMock.Verify(repository => repository.IsUserLinkedAsync(category.Id, category.UserId), Times.Once);
+        CategoryRepositoryMock.Verify(
+            repository => repository.IsUserLinkedAsync(category.Id, category.UserId, It.IsAny<CancellationToken>()), 
+            Times.Once);
         ActivityQueryServiceMock.Verify(Service => Service.GetActivitiesForCategoryAsync(category.Id, null, endDate), Times.Once);
     }
 
@@ -82,22 +94,26 @@ public class GetCategoryStatisticAsyncTests : StatisticServiceTestsBase
         var (activities, expectedTime) = CategoryStatisticScenarioBuilder.GetDataWithStartAndEndDate(category, startDate, endDate, DurationSecond);
         var expected = new CategoryStatisticResponse(expectedTime);
         
-        CategoryRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(category.Id, category.UserId)).ReturnsAsync(true);
+        CategoryRepositoryMock
+            .Setup(repository => repository.IsUserLinkedAsync(category.Id, category.UserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
         ActivityQueryServiceMock
             .Setup(service => service.GetActivitiesForCategoryAsync(category.Id, startDate, endDate))
             .Returns(activities.ToAsyncEnumerable());
 
-        var result = await Service.GetCategoryStatisticAsync(category.Id, startDate, endDate, category.UserId);
+        var result = await Service.GetCategoryStatisticAsync(category.Id, startDate, endDate, category.UserId, CancellationToken.None);
         result.Should().BeEquivalentTo(expected);
 
-        CategoryRepositoryMock.Verify(repository => repository.IsUserLinkedAsync(category.Id, category.UserId), Times.Once);
+        CategoryRepositoryMock.Verify(
+            repository => repository.IsUserLinkedAsync(category.Id, category.UserId, It.IsAny<CancellationToken>()), 
+            Times.Once);
         ActivityQueryServiceMock.Verify(Service => Service.GetActivitiesForCategoryAsync(category.Id, startDate, endDate), Times.Once);
     }
 
     [Fact]
     public async Task GetCategoryStatistic_EmptyId_ShouldThrowBadRequest()
         => await FluentActions
-            .Awaiting(() => Service.GetCategoryStatisticAsync(Guid.Empty, null, null, Guid.NewGuid()))
+            .Awaiting(() => Service.GetCategoryStatisticAsync(Guid.Empty, null, null, Guid.NewGuid(), CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
 
@@ -106,10 +122,10 @@ public class GetCategoryStatisticAsyncTests : StatisticServiceTestsBase
     {
         var id = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        CategoryRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(id, userId)).ReturnsAsync(false);
+        CategoryRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(id, userId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
         await FluentActions
-            .Awaiting(() => Service.GetCategoryStatisticAsync(id, null, null, userId))
+            .Awaiting(() => Service.GetCategoryStatisticAsync(id, null, null, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
     }

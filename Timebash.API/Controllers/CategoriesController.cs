@@ -17,6 +17,7 @@ public class CategoriesController(ICurrentUserService currentUserService, ICateg
     /// Retrieves a category by its unique identifier.
     /// </summary>
     /// <param name="id">The category ID.</param>
+    /// <param name="cancellationToken">A token to cancel the request if the client disconnects.</param>
     /// <returns>The requested category.</returns>
     /// <response code="200">The category was found and returned.</response>
     /// <response code="400">The provided ID is invalid, such as empty GUID.</response>
@@ -27,13 +28,14 @@ public class CategoriesController(ICurrentUserService currentUserService, ICateg
     [ProducesResponseType(typeof(CategoryResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<CategoryResponse>> GetById(Guid id)
-        => Ok(await _categoryService.GetByIdAsync(id, _currentUserService.GetCurrentUserId()));
+    public async Task<ActionResult<CategoryResponse>> GetById(Guid id, CancellationToken cancellationToken = default)
+        => Ok(await _categoryService.GetByIdAsync(id, _currentUserService.GetCurrentUserId(), cancellationToken));
 
     /// <summary>
     /// Returns all activities that belong to the specified category.
     /// </summary>
     /// <param name="id">The category ID.</param>
+    /// <param name="cancellationToken">A token to cancel the request if the client disconnects.</param>
     /// <returns>A collection of activities linked to the category.</returns>
     /// <response code="200">Activities were successfully retrieved.</response>
     /// <response code="400">The provided ID is invalid, such as empty GUID.</response>
@@ -44,13 +46,14 @@ public class CategoriesController(ICurrentUserService currentUserService, ICateg
     [ProducesResponseType(typeof(ActivitiesListResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<ActivitiesListResponse>> GetActivitiesByCategoryId(Guid id)
-        => Ok(await _categoryService.GetActivitiesByCategoryIdAsync(id, _currentUserService.GetCurrentUserId()));
+    public async Task<ActionResult<ActivitiesListResponse>> GetActivitiesByCategoryId(Guid id, CancellationToken cancellationToken = default)
+        => Ok(await _categoryService.GetActivitiesByCategoryIdAsync(id, _currentUserService.GetCurrentUserId(), cancellationToken));
 
     /// <summary>
     /// Creates a new category.
     /// </summary>
     /// <param name="categoryRequest">The category data.</param>
+    /// <param name="cancellationToken">A token to cancel the request if the client disconnects.</param>
     /// <returns>The newly created category.</returns>
     /// <response code="201">The category was created successfully. The response body contains the category data.</response>
     /// <response code="400">The request body is invalid or validation failed.</response>
@@ -59,9 +62,9 @@ public class CategoriesController(ICurrentUserService currentUserService, ICateg
     [HttpPost]
     [ProducesResponseType(typeof(CategoryResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult> Create(CategoryRequest categoryRequest)
+    public async Task<ActionResult> Create(CategoryRequest categoryRequest, CancellationToken cancellationToken = default)
     {
-        var response = await _categoryService.CreateAsync(categoryRequest, _currentUserService.GetCurrentUserId());
+        var response = await _categoryService.CreateAsync(categoryRequest, _currentUserService.GetCurrentUserId(), cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id = response.Id }, response);
     }
 
@@ -70,6 +73,7 @@ public class CategoriesController(ICurrentUserService currentUserService, ICateg
     /// </summary>
     /// <param name="id">The category ID to update.</param>
     /// <param name="categoryRequest">The new category data.</param>
+    /// <param name="cancellationToken">A token to cancel the request if the client disconnects.</param>
     /// <returns>No content when the update is successful.</returns>
     /// <response code="204">The category was updated successfully.</response>
     /// <response code="400">Invalid ID or request body.</response>
@@ -80,9 +84,9 @@ public class CategoriesController(ICurrentUserService currentUserService, ICateg
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> Update(Guid id, CategoryRequest categoryRequest)
+    public async Task<ActionResult> Update(Guid id, CategoryRequest categoryRequest, CancellationToken cancellationToken = default)
     {
-        var changed = await _categoryService.UpdateAsync(id, categoryRequest, _currentUserService.GetCurrentUserId());
+        var changed = await _categoryService.UpdateAsync(id, categoryRequest, _currentUserService.GetCurrentUserId(), cancellationToken);
         if (!changed) HttpContext.Response.Headers["X-No-Changes"] = "true";
 
         return NoContent();
@@ -92,6 +96,7 @@ public class CategoriesController(ICurrentUserService currentUserService, ICateg
     /// Deletes the specified category.
     /// </summary>
     /// <param name="id">The category ID to delete.</param>
+    /// <param name="cancellationToken">A token to cancel the request if the client disconnects.</param>
     /// <returns>No content when the deletion succeeds.</returns>
     /// <response code="204">The category was deleted successfully.</response>
     /// <response code="400">The provided ID is invalid, such as empty GUID.</response>
@@ -102,9 +107,9 @@ public class CategoriesController(ICurrentUserService currentUserService, ICateg
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> Delete(Guid id)
+    public async Task<ActionResult> Delete(Guid id, CancellationToken cancellationToken = default)
     {
-        await _categoryService.DeleteAsync(id, _currentUserService.GetCurrentUserId());
+        await _categoryService.DeleteAsync(id, _currentUserService.GetCurrentUserId(), cancellationToken);
         return NoContent();
     }
 }

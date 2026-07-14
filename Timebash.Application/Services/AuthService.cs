@@ -25,11 +25,11 @@ public class AuthService(
     private readonly IPasswordService _passwordService = passwordService;
     private readonly IJwtProvider _provider = provider;
 
-    public async Task<UserResponse> RegisterAsync(RegisterRequest request)
+    public async Task<UserResponse> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken)
     {
-        if (await _userRepository.ExistsByNameAsync(request.Name))
+        if (await _userRepository.ExistsByNameAsync(request.Name, cancellationToken))
             throw new ResourceConflictException(nameof(request.Name), "User with name already exists");
-        if (await _userRepository.ExistsByEmailAsync(request.Email))
+        if (await _userRepository.ExistsByEmailAsync(request.Email, cancellationToken))
             throw new ResourceConflictException(nameof(request.Email), "User with email already exists");
 
         var user = request.ToUser(Guid.NewGuid());
@@ -44,16 +44,16 @@ public class AuthService(
             DefaultJournalId = defaultJournal.Id
         });
 
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return user.ToResponse();
     }
 
-    public async Task<LoginResponse> LoginAsync(LoginRequest request)
+    public async Task<LoginResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken)
     {
         var user = (request.Login.Contains('@')
-            ? await _userRepository.GetByEmailAsync(request.Login)
-            : await _userRepository.GetByNameAsync(request.Login))
+            ? await _userRepository.GetByEmailAsync(request.Login, cancellationToken)
+            : await _userRepository.GetByNameAsync(request.Login, cancellationToken))
             ?? throw new UnauthorizedException();
 
         if (!_passwordService.VerifyPassword(user, request.Password)) throw new UnauthorizedException();

@@ -6,10 +6,10 @@ public abstract class PostgresRepositoryBase<T>(TimebashDbContext context) : IRe
 {
     protected TimebashDbContext Context => context;
 
-    public async Task<T?> GetByIdAsync(Guid id) => await Context.Set<T>().FindAsync(id);
+    public async Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => await Context.Set<T>().FindAsync([id], cancellationToken);
 
-    public async Task<bool> ExistsAsync(Guid id)
-        => await Context.Set<T>().AnyAsync(entity => entity.Id == id);
+    public async Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken)
+        => await Context.Set<T>().AnyAsync(entity => entity.Id == id, cancellationToken);
 
     public void Add(T entity) => Context.Set<T>().Add(entity);
 
@@ -17,9 +17,9 @@ public abstract class PostgresRepositoryBase<T>(TimebashDbContext context) : IRe
 
     public void Delete(T entity) => Context.Set<T>().Remove(entity);
 
-    public async Task DeleteAsync(Guid id)
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
-        var entity = await GetByIdAsync(id);
+        var entity = await GetByIdAsync(id, cancellationToken);
         if (entity is not null) Delete(entity);
     }
 }

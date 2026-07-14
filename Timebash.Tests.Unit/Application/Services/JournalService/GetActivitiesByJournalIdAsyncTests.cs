@@ -26,13 +26,13 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
                 .OrderBy(activity => activity.StartTime)
                 .Select(activity => activity.ToResponse())]);
 
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
-        ActivityRepositoryMock.Setup(repository => repository.GetByJournalIdAsync(journal.Id)).ReturnsAsync(activities);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        ActivityRepositoryMock.Setup(repository => repository.GetByJournalIdAsync(journal.Id, It.IsAny<CancellationToken>())).ReturnsAsync(activities);
 
-        var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, null, null, journal.UserId);
+        var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, null, null, journal.UserId, CancellationToken.None);
 
         result.Should().BeEquivalentTo(expected);
-        ActivityRepositoryMock.Verify(repository => repository.GetByJournalIdAsync(journal.Id), Times.Once);
+        ActivityRepositoryMock.Verify(repository => repository.GetByJournalIdAsync(journal.Id, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Theory]
@@ -48,11 +48,11 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
                 .OrderBy(activity => activity.StartTime)
                 .Select(activity => activity.ToResponse())]);
 
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         ActivityQueryServiceMock.Setup(service => service.GetActivitiesForJournalAsync(journal.Id, start, null, ActivityDateFilterMode.ByStartTime))
             .Returns(expectedActivities.ToAsyncEnumerable());
 
-        var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, start, null, journal.UserId);
+        var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, start, null, journal.UserId, CancellationToken.None);
         
         result.Should().BeEquivalentTo(expected);
         ActivityQueryServiceMock.Verify(
@@ -73,11 +73,11 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
                 .OrderBy(activity => activity.StartTime)
                 .Select(activity => activity.ToResponse())]);
 
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         ActivityQueryServiceMock.Setup(service => service.GetActivitiesForJournalAsync(journal.Id, null, end, ActivityDateFilterMode.ByStartTime))
             .Returns(expectedActivities.ToAsyncEnumerable());
 
-        var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, null, end, journal.UserId);
+        var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, null, end, journal.UserId, CancellationToken.None);
         
         result.Should().BeEquivalentTo(expected);
         ActivityQueryServiceMock.Verify(
@@ -99,11 +99,11 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
                 .OrderBy(activity => activity.StartTime)
                 .Select(activity => activity.ToResponse())]);
 
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId)).ReturnsAsync(true);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(journal.Id, journal.UserId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
         ActivityQueryServiceMock.Setup(service => service.GetActivitiesForJournalAsync(journal.Id, start, end, ActivityDateFilterMode.ByStartTime))
             .Returns(expectedActivities.ToAsyncEnumerable());
 
-        var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, start, end, journal.UserId);
+        var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, start, end, journal.UserId, CancellationToken.None);
         
         result.Should().BeEquivalentTo(expected);
         ActivityQueryServiceMock.Verify(
@@ -114,7 +114,7 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
     [Fact]
     public async Task GetActivitiesByJournalId_EmptyId_ShouldThrowBadRequest()
         => await FluentActions
-            .Awaiting(() => Service.GetActivitiesByJournalIdAsync(Guid.Empty, null, null, Guid.NewGuid()))
+            .Awaiting(() => Service.GetActivitiesByJournalIdAsync(Guid.Empty, null, null, Guid.NewGuid(), CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
 
@@ -123,10 +123,10 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
     {
         var id = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(id, userId)).ReturnsAsync(false);
+        JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(id, userId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
         await FluentActions
-            .Awaiting(() => Service.GetActivitiesByJournalIdAsync(id, null, null, userId))
+            .Awaiting(() => Service.GetActivitiesByJournalIdAsync(id, null, null, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
     }

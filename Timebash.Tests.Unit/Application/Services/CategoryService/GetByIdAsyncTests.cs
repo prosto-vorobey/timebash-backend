@@ -17,16 +17,16 @@ public class GetByIdAsyncTests : CategoryServiceTestsBase
         };
         var expected = category.ToResponse();
 
-        RepositoryMock.Setup(repository => repository.GetByIdAsync(category.Id)).ReturnsAsync(category);
+        RepositoryMock.Setup(repository => repository.GetByIdAsync(category.Id, It.IsAny<CancellationToken>())).ReturnsAsync(category);
 
-        var result = await Service.GetByIdAsync(category.Id, category.UserId);
+        var result = await Service.GetByIdAsync(category.Id, category.UserId, CancellationToken.None);
         result.Should().BeEquivalentTo(expected);
     }
 
     [Fact]
     public async Task GetById_EmptyId_ShouldThrowBadRequest()
         => await FluentActions
-            .Awaiting(() => Service.GetByIdAsync(Guid.Empty, Guid.NewGuid()))
+            .Awaiting(() => Service.GetByIdAsync(Guid.Empty, Guid.NewGuid(), CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
 
@@ -34,10 +34,10 @@ public class GetByIdAsyncTests : CategoryServiceTestsBase
     public async Task GetById_CategoryNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        RepositoryMock.Setup(repository => repository.GetByIdAsync(id)).ReturnsAsync((Category?)null);
+        RepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((Category?)null);
 
         await FluentActions
-            .Awaiting(() => Service.GetByIdAsync(id, Guid.NewGuid()))
+            .Awaiting(() => Service.GetByIdAsync(id, Guid.NewGuid(), CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
     }

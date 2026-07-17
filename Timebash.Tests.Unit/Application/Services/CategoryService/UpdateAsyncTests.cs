@@ -25,7 +25,7 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
         };
         expected.ApplyUpdate(request);
 
-        RepositoryMock.Setup(repository => repository.GetByIdAsync(category.Id, It.IsAny<CancellationToken>())).ReturnsAsync(category);
+        SetupEnsureAccess(category);
 
         var result = await Service.UpdateAsync(category.Id, request, category.UserId, CancellationToken.None);
 
@@ -37,7 +37,8 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
                 .Excluding(category => category.UpdatedAt)
                 .Excluding(category => category.CreatedAt));
 
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        VerifyEnsureAccessCalled(category.Id, category.UserId);
+        VerifySaveChangesCalled();
     }
 
     [Fact]
@@ -55,7 +56,7 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
             Keywords = category.Keywords
         };
 
-        RepositoryMock.Setup(repository => repository.GetByIdAsync(category.Id, It.IsAny<CancellationToken>())).ReturnsAsync(category);
+        SetupEnsureAccess(category);
 
         var result = await Service.UpdateAsync(category.Id, request, category.UserId, CancellationToken.None);
 
@@ -67,7 +68,8 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
                 .Excluding(category => category.UpdatedAt)
                 .Excluding(category => category.CreatedAt));
 
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        VerifyEnsureAccessCalled(category.Id, category.UserId);
+        VerifySaveChangesNotCalled();
     }
 
     [Fact]
@@ -85,7 +87,7 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
             Keywords = [.. category.Keywords.Shuffle()]
         };
 
-        RepositoryMock.Setup(repository => repository.GetByIdAsync(category.Id, It.IsAny<CancellationToken>())).ReturnsAsync(category);
+        SetupEnsureAccess(category);
 
         var result = await Service.UpdateAsync(category.Id, request, category.UserId, CancellationToken.None);
 
@@ -97,29 +99,41 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
                 .Excluding(category => category.UpdatedAt)
                 .Excluding(category => category.CreatedAt));
 
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        VerifyEnsureAccessCalled(category.Id, category.UserId);
+        VerifySaveChangesNotCalled();
     }
 
     [Fact]
     public async Task Update_EmptyId_ShouldThrowBadRequest()
-        => await FluentActions
-            .Awaiting(() => Service.UpdateAsync(
-                Guid.Empty, 
-                new CategoryRequest(Faker.Lorem.Word(), "#000000", []), Guid.NewGuid(), CancellationToken.None))
+    {
+        var id = Guid.Empty;
+        var userId = Guid.NewGuid();
+
+        SetupEnsureAccessThrowsBadRequest(id, userId);
+
+        await FluentActions
+            .Awaiting(() => Service.UpdateAsync(id, new CategoryRequest(Faker.Lorem.Word(), "#000000", []), userId, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
+
+        VerifyEnsureAccessCalled(id, userId);
+        VerifySaveChangesNotCalled();
+    }
 
     [Fact]
     public async Task Update_CategoryNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        RepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((Category?)null);
+        var userId = Guid.NewGuid();
+
+        SetupEnsureAccessThrowsNotFound(id, userId);
 
         await FluentActions
-            .Awaiting(() => Service.UpdateAsync(
-                id, 
-                new CategoryRequest(Faker.Lorem.Word(), "#000000", []), Guid.NewGuid(), CancellationToken.None))
+            .Awaiting(() => Service.UpdateAsync(id, new CategoryRequest(Faker.Lorem.Word(), "#000000", []), userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        VerifyEnsureAccessCalled(id, userId);
+        VerifySaveChangesNotCalled();
     }
 }

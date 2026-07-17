@@ -1,19 +1,18 @@
-using Timebash.Application.Helpers;
 using Timebash.Core.DTOs.Responses;
-using Timebash.Core.Repositories;
 using Timebash.Core.Services;
+using Timebash.Core.Services.Access;
 
 namespace Timebash.Application.Services;
 
 public class StatisticService(
-    IUserRepository userRepository,
-    IJournalRepository journalRepository,
-    ICategoryRepository categoryRepository,
+    IUserAccessService userAccessService,
+    IJournalAccessService journalAccessService,
+    ICategoryAccessService categoryAccessService,
     IActivityQueryService queryService) : IStatisticService
 {
-    private readonly IUserRepository _userRepository = userRepository;
-    private readonly IJournalRepository _journalRepository = journalRepository;
-    private readonly ICategoryRepository _categoryRepository = categoryRepository;
+    private readonly IUserAccessService _userAccessService = userAccessService;
+    private readonly IJournalAccessService _journalAccessService = journalAccessService;
+    private readonly ICategoryAccessService _categoryAccessService = categoryAccessService;
     private readonly IActivityQueryService _queryService = queryService;
 
     public async Task<UserAggregateStatisticResponse> GetUserAggregateStatisticAsync(
@@ -22,7 +21,7 @@ public class StatisticService(
         DateTime? end, 
         CancellationToken cancellationToken)
     {
-        await EntityAccessGuard.ValidateUserExistsAsync(_userRepository, userId, cancellationToken);
+        await _userAccessService.ValidateExistsAsync(userId, cancellationToken);
 
         var (totalTime, statItems) = await AggregateCategoryStatisticAsync(
             _queryService.GetActivitiesForUserAsync(userId, start, end), 
@@ -40,7 +39,7 @@ public class StatisticService(
         Guid userId, 
         CancellationToken cancellationToken)
     {
-        await EntityAccessGuard.ValidateJournalAccessAsync(_journalRepository, journalId, userId, cancellationToken);
+        await _journalAccessService.ValidateAccessAsync(journalId, userId, cancellationToken);
 
         var (totalTime, statItems) = await AggregateCategoryStatisticAsync(
             _queryService.GetActivitiesForJournalAsync(journalId, start, end, ActivityDateFilterMode.Overlap), 
@@ -58,7 +57,7 @@ public class StatisticService(
         Guid userId, 
         CancellationToken cancellationToken)
     {
-        await EntityAccessGuard.ValidateCategoryAccessAsync(_categoryRepository, categoryId, userId, cancellationToken);
+        await _categoryAccessService.ValidateAccessAsync(categoryId, userId, cancellationToken);
         
         long totalTime = 0;
         await foreach (var activity in _queryService.GetActivitiesForCategoryAsync(categoryId, start, end).WithCancellation(cancellationToken))

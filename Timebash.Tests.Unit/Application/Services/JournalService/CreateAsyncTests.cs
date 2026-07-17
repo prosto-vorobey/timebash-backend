@@ -31,6 +31,6 @@ public class CreateAsyncTests : JournalServiceTestsBase
                 .Excluding(journal => journal.UpdatedAt));
 
         result.Should().BeEquivalentTo(capturedJournal.ToResponse());
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        VerifySaveChangesCalled();
     }
 }

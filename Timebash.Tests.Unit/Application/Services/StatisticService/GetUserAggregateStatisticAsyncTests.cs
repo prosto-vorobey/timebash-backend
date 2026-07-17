@@ -20,16 +20,14 @@ public class GetUserAggregateStatisticAsyncTests : StatisticServiceTestsBase
         var user = new User(userId, Faker.Internet.UserName(), Faker.Internet.Email());
         var expected = new UserAggregateStatisticResponse(expectedTime, expectedStats);
 
-        UserRepositoryMock.Setup(repository => repository.ExistsAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        ActivityQueryServiceMock
-            .Setup(service => service.GetActivitiesForUserAsync(user.Id, null, null))
-            .Returns(activities.ToAsyncEnumerable());
+        SetupUserExists(user.Id);
+        SetupGetActivitiesForUser(user.Id, null, null, activities);
 
         var result = await Service.GetUserAggregateStatisticAsync(user.Id, null, null, CancellationToken.None);
+        
         result.Should().BeEquivalentTo(expected);
-
-        UserRepositoryMock.Verify(repository => repository.ExistsAsync(user.Id, It.IsAny<CancellationToken>()), Times.Once);
-        ActivityQueryServiceMock.Verify(service => service.GetActivitiesForUserAsync(user.Id, null, null), Times.Once);
+        VerifyUserExistsCalled(user.Id);
+        VerifyGetActivitiesForUserCalled(user.Id, null, null);
     }
 
     [Fact]
@@ -46,16 +44,14 @@ public class GetUserAggregateStatisticAsyncTests : StatisticServiceTestsBase
         );
         var expected = new UserAggregateStatisticResponse(expectedTime, expectedStats);
 
-        UserRepositoryMock.Setup(repository => repository.ExistsAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        ActivityQueryServiceMock
-            .Setup(service => service.GetActivitiesForUserAsync(user.Id, startDate, null))
-            .Returns(activities.ToAsyncEnumerable());
+        SetupUserExists(user.Id);
+        SetupGetActivitiesForUser(user.Id, startDate, null, activities);
 
         var result = await Service.GetUserAggregateStatisticAsync(user.Id, startDate, null, CancellationToken.None);
+        
         result.Should().BeEquivalentTo(expected);
-
-        UserRepositoryMock.Verify(repository => repository.ExistsAsync(user.Id, It.IsAny<CancellationToken>()), Times.Once);
-        ActivityQueryServiceMock.Verify(service => service.GetActivitiesForUserAsync(user.Id, startDate, null), Times.Once);
+        VerifyUserExistsCalled(user.Id);
+        VerifyGetActivitiesForUserCalled(user.Id, startDate, null);
     }
 
     [Fact]
@@ -72,16 +68,14 @@ public class GetUserAggregateStatisticAsyncTests : StatisticServiceTestsBase
         );
         var expected = new UserAggregateStatisticResponse(expectedTime, expectedStats);
 
-        UserRepositoryMock.Setup(repository => repository.ExistsAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        ActivityQueryServiceMock
-            .Setup(service => service.GetActivitiesForUserAsync(user.Id, null, endDate))
-            .Returns(activities.ToAsyncEnumerable());
+        SetupUserExists(user.Id);
+        SetupGetActivitiesForUser(user.Id, null, endDate, activities);
 
         var result = await Service.GetUserAggregateStatisticAsync(user.Id, null, endDate, CancellationToken.None);
+        
         result.Should().BeEquivalentTo(expected);
-
-        UserRepositoryMock.Verify(repository => repository.ExistsAsync(user.Id, It.IsAny<CancellationToken>()), Times.Once);
-        ActivityQueryServiceMock.Verify(service => service.GetActivitiesForUserAsync(user.Id, null, endDate), Times.Once);
+        VerifyUserExistsCalled(user.Id);
+        VerifyGetActivitiesForUserCalled(user.Id, null, endDate);
     }
 
     [Fact]
@@ -100,34 +94,68 @@ public class GetUserAggregateStatisticAsyncTests : StatisticServiceTestsBase
         );
         var expected = new UserAggregateStatisticResponse(expectedTime, expectedStats);
 
-        UserRepositoryMock.Setup(repository => repository.ExistsAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        ActivityQueryServiceMock
-            .Setup(service => service.GetActivitiesForUserAsync(user.Id, startDate, endDate))
-            .Returns(activities.ToAsyncEnumerable());
+        SetupUserExists(user.Id);
+        SetupGetActivitiesForUser(user.Id, startDate, endDate, activities);
 
         var result = await Service.GetUserAggregateStatisticAsync(user.Id, startDate, endDate, CancellationToken.None);
+        
         result.Should().BeEquivalentTo(expected);
-
-        UserRepositoryMock.Verify(repository => repository.ExistsAsync(user.Id, It.IsAny<CancellationToken>()), Times.Once);
-        ActivityQueryServiceMock.Verify(service => service.GetActivitiesForUserAsync(user.Id, startDate, endDate), Times.Once);
+        VerifyUserExistsCalled(user.Id);
+        VerifyGetActivitiesForUserCalled(user.Id, startDate, endDate);
     }
 
     [Fact]
     public async Task GetUserAggregateStatistic_EmptyId_ShouldThrowBadRequest()
-        => await FluentActions
-            .Awaiting(() => Service.GetUserAggregateStatisticAsync(Guid.Empty, null, null, CancellationToken.None))
+    {
+        var id = Guid.Empty;
+        UserAccessServiceMock
+            .Setup(service => service.ValidateExistsAsync(id, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new BadRequestException());
+
+        await FluentActions
+            .Awaiting(() => Service.GetUserAggregateStatisticAsync(id, null, null, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
+
+        VerifyUserExistsCalled(id);
+        VerifyGetActivitiesForUserNotCalled();
+    }
 
     [Fact]
     public async Task GetUserAggregateStatistic_UserNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        UserRepositoryMock.Setup(repository => repository.ExistsAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        UserAccessServiceMock
+            .Setup(service => service.ValidateExistsAsync(id, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new NotFoundException());
 
         await FluentActions
             .Awaiting(() => Service.GetUserAggregateStatisticAsync(id, null, null, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        VerifyUserExistsCalled(id);
+        VerifyGetActivitiesForUserNotCalled();
     }
+
+    private void SetupUserExists(Guid userId)
+        => UserAccessServiceMock
+            .Setup(service => service.ValidateExistsAsync(userId, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+    private void SetupGetActivitiesForUser(Guid id, DateTime? startDate, DateTime? endDate, List<Activity> activities)
+        => ActivityQueryServiceMock
+            .Setup(service => service.GetActivitiesForUserAsync(id, startDate, endDate))
+            .Returns(activities.ToAsyncEnumerable());
+
+    private void VerifyUserExistsCalled(Guid userId)
+        => UserAccessServiceMock.Verify(service => service.ValidateExistsAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
+
+    private void VerifyGetActivitiesForUserCalled(Guid id, DateTime? startDate, DateTime? endDate)
+        => ActivityQueryServiceMock.Verify(service => service.GetActivitiesForUserAsync(id, startDate, endDate), Times.Once);
+
+    private void VerifyGetActivitiesForUserNotCalled()
+        => ActivityQueryServiceMock.Verify(
+            service => service.GetActivitiesForUserAsync(It.IsAny<Guid>(), It.IsAny<DateTime?>(), It.IsAny<DateTime?>()),
+            Times.Never);
 }

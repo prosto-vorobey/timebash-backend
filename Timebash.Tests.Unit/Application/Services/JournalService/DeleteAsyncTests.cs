@@ -18,33 +18,51 @@ public class DeleteAsyncTests : JournalServiceTestsBase
             DefaultJournalId = Guid.NewGuid()
         };
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
+        SetupEnsureAccess(journal);
         SettingsRepositoryMock.Setup(repository => repository.GetByIdAsync(userId, It.IsAny<CancellationToken>())).ReturnsAsync(userSettings);
 
         await Service.DeleteAsync(journal.Id, userId, CancellationToken.None);
 
+        VerifyEnsureAccessCalled(journal.Id, journal.UserId);
         SettingsRepositoryMock.Verify(repository => repository.GetByIdAsync(journal.UserId, It.IsAny<CancellationToken>()), Times.Once);
         JournalRepositoryMock.Verify(repository => repository.Delete(journal), Times.Once);
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        VerifySaveChangesCalled();
     }
 
     [Fact]
     public async Task Delete_EmptyId_ShouldThrowBadRequest()
-    => await FluentActions
-        .Awaiting(() => Service.DeleteAsync(Guid.Empty, Guid.NewGuid(), CancellationToken.None))
+    {
+        var id = Guid.Empty;
+        var userId = Guid.NewGuid();
+
+        SetupEnsureAccessThrowsBadRequest(id, userId);
+
+        await FluentActions
+        .Awaiting(() => Service.DeleteAsync(id, userId, CancellationToken.None))
         .Should()
         .ThrowAsync<BadRequestException>();
+
+        VerifyEnsureAccessCalled(id, userId);
+        VerifyJournalDeleteNotCalled();
+        VerifySaveChangesNotCalled();
+    }
 
     [Fact]
     public async Task Delete_JournalNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((Journal?)null);
+        var userId = Guid.NewGuid();
+
+        SetupEnsureAccessThrowsNotFound(id, userId);
 
         await FluentActions
-            .Awaiting(() => Service.DeleteAsync(id, Guid.NewGuid(), CancellationToken.None))
+            .Awaiting(() => Service.DeleteAsync(id, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        VerifyEnsureAccessCalled(id, userId);
+        VerifyJournalDeleteNotCalled();
+        VerifySaveChangesNotCalled();
     }
 
     [Fact]
@@ -53,13 +71,17 @@ public class DeleteAsyncTests : JournalServiceTestsBase
         var userId = Guid.NewGuid();
         var journal = new Journal(Guid.NewGuid(), userId, Faker.Lorem.Word());
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
+        SetupEnsureAccess(journal);
         SettingsRepositoryMock.Setup(repository => repository.GetByIdAsync(userId, It.IsAny<CancellationToken>())).ReturnsAsync((UserSettings?)null);
 
         await FluentActions
             .Awaiting(() => Service.DeleteAsync(journal.Id, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        VerifyEnsureAccessCalled(journal.Id, journal.UserId);
+        VerifyJournalDeleteNotCalled();
+        VerifySaveChangesNotCalled();
     }
 
     [Fact]
@@ -73,12 +95,19 @@ public class DeleteAsyncTests : JournalServiceTestsBase
             DefaultJournalId = journal.Id
         };
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
+        SetupEnsureAccess(journal);
         SettingsRepositoryMock.Setup(repository => repository.GetByIdAsync(userId, It.IsAny<CancellationToken>())).ReturnsAsync(userSettings);
 
         await FluentActions
             .Awaiting(() => Service.DeleteAsync(journal.Id, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<ConflictException>();
+
+        VerifyEnsureAccessCalled(journal.Id, journal.UserId);
+        VerifyJournalDeleteNotCalled();
+        VerifySaveChangesNotCalled();
     }
+
+    private void VerifyJournalDeleteNotCalled()
+        => JournalRepositoryMock.Verify(repository => repository.Delete(It.IsAny<Journal>()), Times.Never);
 }

@@ -31,6 +31,6 @@ public class CreateAsyncTests : CategoryServiceTestsBase
                 .Excluding(category => category.UpdatedAt));
 
         result.Should().BeEquivalentTo(capturedCategory.ToResponse());
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        VerifySaveChangesCalled();
     }
 }

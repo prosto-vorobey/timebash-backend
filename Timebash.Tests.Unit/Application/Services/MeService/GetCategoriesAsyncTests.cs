@@ -19,30 +19,46 @@ public class GetCategoriesAsyncTests : MeServiceTestsBase
         };
         var expected = new CategoriesListResponse([.. categories.Select(category => category.ToResponse())]);
 
-        UserRepositoryMock.Setup(repository => repository.ExistsAsync(userId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        SetupUserValidateExists(userId);
         CategoryRepositoryMock.Setup(repository => repository.GetByUserIdAsync(userId, It.IsAny<CancellationToken>())).ReturnsAsync(categories);
 
         var result = await Service.GetCategoriesAsync(userId, CancellationToken.None);
+
         result.Should().BeEquivalentTo(expected);
+        VerifyValidateExistsCalled(userId);
+        CategoryRepositoryMock.Verify(repository => repository.GetByUserIdAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task GetCategories_EmptyId_ShouldThrowBadRequest()
-        => await FluentActions
-            .Awaiting(() => Service.GetCategoriesAsync(Guid.Empty, CancellationToken.None))
+    {
+        var id = Guid.Empty;
+        SetupUserValidateExistsThrowsBadRequest(id);
+
+        await FluentActions
+            .Awaiting(() => Service.GetCategoriesAsync(id, CancellationToken.None))
             .Should()
-            .ThrowAsync<BadRequestException>()
-            .WithMessage("Invalid id");
+            .ThrowAsync<BadRequestException>();
+
+        VerifyValidateExistsCalled(id);
+        VerifyGetCategoriesByUserIdNotCalled();
+    }
 
     [Fact]
     public async Task GetCategories_UserNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        UserRepositoryMock.Setup(repository => repository.ExistsAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        SetupUserValidateExistsThrowsNotFound(id);
 
         await FluentActions
             .Awaiting(() => Service.GetCategoriesAsync(id, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        VerifyValidateExistsCalled(id);
+        VerifyGetCategoriesByUserIdNotCalled();
     }
+
+    private void VerifyGetCategoriesByUserIdNotCalled()
+        => CategoryRepositoryMock.Verify(repository => repository.GetByUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
 }

@@ -17,8 +17,8 @@ public class UpdateNameAsyncTests : MeServiceTestsBase
         var currentCreatedTime = user.CreatedAt;
         var request = new UserNameUpdateRequest($"{user.Name} changed");
 
-        UserRepositoryMock.Setup(repository => repository.ExistsByNameAsync(request.Name, It.IsAny<CancellationToken>())).ReturnsAsync(false);
-        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+        SetupUserExistsByName(request.Name);
+        SetupUserEnsureAccess(user);
 
         var result = await Service.UpdateNameAsync(request, id, CancellationToken.None);
 
@@ -29,8 +29,9 @@ public class UpdateNameAsyncTests : MeServiceTestsBase
         user.PasswordHash.Should().BeNull();
         user.CreatedAt.Should().Be(currentCreatedTime);
 
-        UserRepositoryMock.Verify(repository => repository.ExistsByNameAsync(request.Name, It.IsAny<CancellationToken>()), Times.Once);
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        VerifyUserExistsByNameCalled(request.Name);
+        VerifyEnsureAccessCalled(id);
+        VerifySaveChangesCalled();
     }
 
     [Fact]
@@ -43,8 +44,8 @@ public class UpdateNameAsyncTests : MeServiceTestsBase
         var currentCreatedTime = user.CreatedAt;
         var request = new UserNameUpdateRequest(name);
 
-        UserRepositoryMock.Setup(repository => repository.ExistsByNameAsync(request.Name, It.IsAny<CancellationToken>())).ReturnsAsync(false);
-        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+        SetupUserExistsByName(request.Name);
+        SetupUserEnsureAccess(user);
 
         var result = await Service.UpdateNameAsync(request, id, CancellationToken.None);
 
@@ -55,34 +56,48 @@ public class UpdateNameAsyncTests : MeServiceTestsBase
         user.PasswordHash.Should().BeNull();
         user.CreatedAt.Should().Be(currentCreatedTime);
 
-        UserRepositoryMock.Verify(repository => repository.ExistsByNameAsync(request.Name, It.IsAny<CancellationToken>()), Times.Once);
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        VerifyUserExistsByNameCalled(request.Name);
+        VerifyEnsureAccessCalled(id);
+        VerifySaveChangesNotCalled();
     }
 
     [Fact]
     public async Task UpdateName_NameAlreadyExists_ShouldThrowResourceConflictException()
     {
+        var user = new User(Guid.NewGuid(), Faker.Internet.UserName(), Faker.Internet.Email());
         var request = new UserNameUpdateRequest(Faker.Internet.UserName());
-        UserRepositoryMock.Setup(repository => repository.ExistsByNameAsync(request.Name, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+        SetupUserExistsByName(request.Name, true);
+        SetupUserEnsureAccess(user);
 
         var exception = await FluentActions
             .Awaiting(() => Service.UpdateNameAsync(request, Guid.NewGuid(), CancellationToken.None))
             .Should()
             .ThrowAsync<ResourceConflictException>();
         exception.Which.Field.Should().Be("Name");
+
+        VerifyUserExistsByNameCalled(request.Name);
+        VerifyEnsureAccessNotCalled();
+        VerifySaveChangesNotCalled();
     }
 
     [Fact]
     public async Task UpdateName_EmptyId_ShouldThrowBadRequest()
     {
+        var id = Guid.Empty;
         var request = new UserNameUpdateRequest(Faker.Internet.UserName());
-        UserRepositoryMock.Setup(repository => repository.ExistsByNameAsync(request.Name, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+
+        SetupUserExistsByName(request.Name);
+        SetupUserEnsureAccessThrowsBadRequest(id);
 
         await FluentActions
-            .Awaiting(() => Service.UpdateNameAsync(request, Guid.Empty, CancellationToken.None))
+            .Awaiting(() => Service.UpdateNameAsync(request, id, CancellationToken.None))
             .Should()
-            .ThrowAsync<BadRequestException>()
-            .WithMessage("Invalid id");
+            .ThrowAsync<BadRequestException>();
+
+        VerifyUserExistsByNameCalled(request.Name);
+        VerifyEnsureAccessCalled(id);
+        VerifySaveChangesNotCalled();
     }
 
     [Fact]
@@ -91,12 +106,22 @@ public class UpdateNameAsyncTests : MeServiceTestsBase
         var id = Guid.NewGuid();
         var request = new UserNameUpdateRequest(Faker.Internet.UserName());
 
-        UserRepositoryMock.Setup(repository => repository.ExistsByNameAsync(request.Name, It.IsAny<CancellationToken>())).ReturnsAsync(false);
-        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
+        SetupUserExistsByName(request.Name);
+        SetupUserEnsureAccessThrowsNotFound(id);
 
         await FluentActions
             .Awaiting(() => Service.UpdateNameAsync(request, id, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        VerifyUserExistsByNameCalled(request.Name);
+        VerifyEnsureAccessCalled(id);
+        VerifySaveChangesNotCalled();
     }
+
+    private void SetupUserExistsByName(string name, bool exists = false)
+        => UserRepositoryMock.Setup(repository => repository.ExistsByNameAsync(name, It.IsAny<CancellationToken>())).ReturnsAsync(exists);
+
+    private void VerifyUserExistsByNameCalled(string name)
+        => UserRepositoryMock.Verify(repository => repository.ExistsByNameAsync(name, It.IsAny<CancellationToken>()), Times.Once);
 }

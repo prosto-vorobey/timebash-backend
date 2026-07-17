@@ -19,30 +19,46 @@ public class GetJournalsAsyncTests : MeServiceTestsBase
         };
         var expected = new JournalsListResponse([.. journals.Select(journal => journal.ToResponse())]);
 
-        UserRepositoryMock.Setup(repository => repository.ExistsAsync(userId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        SetupUserValidateExists(userId);
         JournalRepositoryMock.Setup(repository => repository.GetByUserIdAsync(userId, It.IsAny<CancellationToken>())).ReturnsAsync(journals);
 
         var result = await Service.GetJournalsAsync(userId, CancellationToken.None);
+
         result.Should().BeEquivalentTo(expected);
+        VerifyValidateExistsCalled(userId);
+        JournalRepositoryMock.Verify(repository => repository.GetByUserIdAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task GetJournals_EmptyId_ShouldThrowBadRequest()
-        => await FluentActions
-            .Awaiting(() => Service.GetJournalsAsync(Guid.Empty, CancellationToken.None))
+    {
+        var id = Guid.Empty;
+        SetupUserValidateExistsThrowsBadRequest(id);
+
+        await FluentActions
+            .Awaiting(() => Service.GetJournalsAsync(id, CancellationToken.None))
             .Should()
-            .ThrowAsync<BadRequestException>()
-            .WithMessage("Invalid id");
+            .ThrowAsync<BadRequestException>();
+
+        VerifyValidateExistsCalled(id);
+        VerifyGetJournalsByUserIdNotCalled();
+    }
 
     [Fact]
     public async Task GetJournals_UserNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        UserRepositoryMock.Setup(repository => repository.ExistsAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        SetupUserValidateExistsThrowsNotFound(id);
 
         await FluentActions
             .Awaiting(() => Service.GetJournalsAsync(id, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        VerifyValidateExistsCalled(id);
+        VerifyGetJournalsByUserIdNotCalled();
     }
+
+    private void VerifyGetJournalsByUserIdNotCalled()
+        => JournalRepositoryMock.Verify(repository => repository.GetByUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
 }

@@ -1,6 +1,5 @@
 using Timebash.Application.Extensions;
 using Timebash.Application.Extensions.Requests;
-using Timebash.Application.Helpers;
 using Timebash.Core.Contracts;
 using Timebash.Core.DTOs.Requests;
 using Timebash.Core.DTOs.Responses;
@@ -9,6 +8,7 @@ using Timebash.Core.Exceptions;
 using Timebash.Core.Extensions;
 using Timebash.Core.Repositories;
 using Timebash.Core.Services;
+using Timebash.Core.Services.Access;
 
 namespace Timebash.Application.Services;
 
@@ -17,16 +17,18 @@ public class JournalService(
     IJournalRepository journalRepository,
     IActivityRepository activityRepository,
     IUserSettingsRepository userSettingsRepository,
+    IJournalAccessService accessService,
     IActivityQueryService queryService) : IJournalService
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IJournalRepository _journalRepository = journalRepository;
     private readonly IActivityRepository _activityRepository = activityRepository;
     private readonly IUserSettingsRepository _userSettingsRepository = userSettingsRepository;
+    private readonly IJournalAccessService _accessService = accessService;
     private readonly IActivityQueryService _queryService = queryService;
 
     public async Task<JournalResponse> GetByIdAsync(Guid id, Guid userId, CancellationToken cancellationToken)
-        => (await EntityAccessGuard.EnsureJournalAccessAsync(_journalRepository, id, userId, cancellationToken)).ToResponse();
+        => (await _accessService.EnsureAccessAsync(id, userId, cancellationToken)).ToResponse();
 
     public async Task<ActivitiesListResponse> GetActivitiesByJournalIdAsync(
         Guid id, 
@@ -35,7 +37,7 @@ public class JournalService(
         Guid userId, 
         CancellationToken cancellationToken)
     {
-        await EntityAccessGuard.ValidateJournalAccessAsync(_journalRepository, id, userId, cancellationToken);
+        await _accessService.ValidateAccessAsync(id, userId, cancellationToken);
 
         var activities = start is null && end is null
             ? await _activityRepository.GetByJournalIdAsync(id, cancellationToken)
@@ -60,7 +62,7 @@ public class JournalService(
 
     public async Task<bool> UpdateAsync(Guid id, JournalRequest journalRequest, Guid userId, CancellationToken cancellationToken)
     {
-        var journal = await EntityAccessGuard.EnsureJournalAccessAsync(_journalRepository, id, userId, cancellationToken);
+        var journal = await _accessService.EnsureAccessAsync(id, userId, cancellationToken);
         if (!journal.ApplyUpdate(journalRequest)) return false;
         
         journal.UpdatedAt = DateTime.UtcNow;
@@ -71,7 +73,7 @@ public class JournalService(
 
     public async Task DeleteAsync(Guid id, Guid userId, CancellationToken cancellationToken)
     {
-        var journal = await EntityAccessGuard.EnsureJournalAccessAsync(_journalRepository, id, userId, cancellationToken);
+        var journal = await _accessService.EnsureAccessAsync(id, userId, cancellationToken);
         var userSettings = await _userSettingsRepository.GetByIdAsync(journal.UserId, cancellationToken) ?? throw new NotFoundException();
         if (userSettings.DefaultJournalId == id) throw new ConflictException("Unpossible to delete the default journal");
 
@@ -88,7 +90,7 @@ public class JournalService(
         Guid userId, 
         CancellationToken cancellationToken)
     {
-        await EntityAccessGuard.ValidateJournalAccessAsync(_journalRepository, id, userId, cancellationToken);
+        await _accessService.ValidateAccessAsync(id, userId, cancellationToken);
 
         var truncatedStart = startTime.TruncateToSecond();
         var truncatedEnd = endTime.TruncateToSecond();

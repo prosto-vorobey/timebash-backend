@@ -14,29 +14,39 @@ public class GetAsyncTests : MeServiceTestsBase
         var user = new User(Guid.NewGuid(), Faker.Internet.UserName(), Faker.Internet.Email());
         var expected = user.ToResponse();
 
-        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+        SetupUserEnsureAccess(user);
 
         var result = await Service.GetAsync(user.Id, CancellationToken.None);
+        
         result.Should().BeEquivalentTo(expected);
+        VerifyEnsureAccessCalled(user.Id);
     }
 
     [Fact]
     public async Task Get_EmptyId_ShouldThrowBadRequest()
-        => await FluentActions
-            .Awaiting(() => Service.GetAsync(Guid.Empty, CancellationToken.None))
+    {
+        var id = Guid.Empty;
+        SetupUserEnsureAccessThrowsBadRequest(id);
+
+        await FluentActions
+            .Awaiting(() => Service.GetAsync(id, CancellationToken.None))
             .Should()
-            .ThrowAsync<BadRequestException>()
-            .WithMessage("Invalid id");
+            .ThrowAsync<BadRequestException>();
+
+        VerifyEnsureAccessCalled(id);
+    }
 
     [Fact]
     public async Task Get_UserNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
+        SetupUserEnsureAccessThrowsNotFound(id);
 
         await FluentActions
             .Awaiting(() => Service.GetAsync(id, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+        
+        VerifyEnsureAccessCalled(id);
     }
 }

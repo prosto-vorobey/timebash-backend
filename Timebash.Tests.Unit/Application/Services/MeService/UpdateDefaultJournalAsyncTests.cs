@@ -21,7 +21,7 @@ public class UpdateDefaultJournalAsyncTests : MeServiceTestsBase
         var request = new DefaultJournalUpdateRequest(Guid.NewGuid());
 
         SetupUserValidateExists(userId);
-        SetupJournalValidateAccess(journalId, userId);
+        SetupJournalValidateAccess(request.JournalId, userId);
         SetupSettingsGetById(userId, userSettings);
 
         var result = await Service.UpdateDefaultJournalAsync(request, userId, CancellationToken.None);
@@ -31,7 +31,7 @@ public class UpdateDefaultJournalAsyncTests : MeServiceTestsBase
         userSettings.DefaultJournalId.Should().Be(request.JournalId);
 
         VerifyValidateExistsCalled(userId);
-        VerifyJournalValidateAccessCalled(journalId, userId);
+        VerifyJournalValidateAccessCalled(request.JournalId, userId);
         VerifySettingsGetByIdCalled(userId);
         VerifySaveChangesCalled();
     }
@@ -49,7 +49,7 @@ public class UpdateDefaultJournalAsyncTests : MeServiceTestsBase
         var request = new DefaultJournalUpdateRequest(userSettings.DefaultJournalId);
 
         SetupUserValidateExists(userId);
-        SetupJournalValidateAccess(journalId, userId);
+        SetupJournalValidateAccess(request.JournalId, userId);
         SetupSettingsGetById(userId, userSettings);
 
         var result = await Service.UpdateDefaultJournalAsync(request, userId, CancellationToken.None);
@@ -59,7 +59,7 @@ public class UpdateDefaultJournalAsyncTests : MeServiceTestsBase
         userSettings.DefaultJournalId.Should().Be(journalId);
 
         VerifyValidateExistsCalled(userId);
-        VerifyJournalValidateAccessCalled(journalId, userId);
+        VerifyJournalValidateAccessCalled(request.JournalId, userId);
         VerifySettingsGetByIdCalled(userId);
         VerifySaveChangesNotCalled();
     }

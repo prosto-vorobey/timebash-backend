@@ -15,26 +15,22 @@ public class RemoveCategoryFromActivityAsyncTests : ActivityServiceTestsBase
         var category = new Category(Guid.NewGuid(), userId, Faker.Lorem.Word(), "#000000");
         var currentUpdatedTime = activity.UpdatedAt;
 
-        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id, It.IsAny<CancellationToken>())).ReturnsAsync(activity);
-        JournalRepositoryMock
-            .Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
-        CategoryRepositoryMock
-            .Setup(repository => repository.IsUserLinkedAsync(category.Id, userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
-        ActivityRepositoryMock
-            .Setup(repository => repository.IsCategoryLinkedAsync(activity.Id, category.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+        SetupActivityEnsureAccess(activity, userId);
+        SetupCategoryValidateAccess(category.Id, userId);
+        SetupActivityIsCategoryLinked(activity.Id, category.Id, true);
 
         var result = await Service.RemoveCategoryFromActivityAsync(activity.Id, category.Id, userId, CancellationToken.None);
 
         result.Should().BeTrue();
         activity.UpdatedAt.Should().BeAfter(currentUpdatedTime);
 
+        VerifyActivityEnsureAccessCalled(activity.Id, userId);
+        VerifyCategoryValidateAccessCalled(category.Id, userId);
+        VerifyActivityIsCategoryLinkedCalled(activity.Id, category.Id);
         ActivityRepositoryMock.Verify(
             repository => repository.RemoveCategoryFromActivityAsync(activity.Id, category.Id, It.IsAny<CancellationToken>()), 
             Times.Once);
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        VerifySaveChangesCalled();
     }
 
     [Fact]
@@ -45,45 +41,60 @@ public class RemoveCategoryFromActivityAsyncTests : ActivityServiceTestsBase
         var category = new Category(Guid.NewGuid(), userId, Faker.Lorem.Word(), "#000000");
         var currentUpdateTime = activity.UpdatedAt;
 
-        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id, It.IsAny<CancellationToken>())).ReturnsAsync(activity);
-        JournalRepositoryMock
-            .Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
-        CategoryRepositoryMock
-            .Setup(repository => repository.IsUserLinkedAsync(category.Id, userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
-        ActivityRepositoryMock
-            .Setup(repository => repository.IsCategoryLinkedAsync(activity.Id, category.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
+        SetupActivityEnsureAccess(activity, userId);
+        SetupCategoryValidateAccess(category.Id, userId);
+        SetupActivityIsCategoryLinked(activity.Id, category.Id, false);
 
         var result = await Service.RemoveCategoryFromActivityAsync(activity.Id, category.Id, userId, CancellationToken.None);
 
         result.Should().BeFalse();
         activity.UpdatedAt.Should().Be(currentUpdateTime);
 
-        ActivityRepositoryMock.Verify(
-            repository => repository.RemoveCategoryFromActivityAsync(activity.Id, category.Id, It.IsAny<CancellationToken>()), 
-            Times.Never);
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        VerifyActivityEnsureAccessCalled(activity.Id, userId);
+        VerifyCategoryValidateAccessCalled(category.Id, userId);
+        VerifyActivityIsCategoryLinkedCalled(activity.Id, category.Id);
+        VerifyRemoveCategoryFromActivityNotCalled();
+        VerifySaveChangesNotCalled();
     }
 
     [Fact]
     public async Task RemoveCategoryFromActivity_EmptyActivityId_ShouldThrowBadRequest()
-        => await FluentActions
-            .Awaiting(() => Service.RemoveCategoryFromActivityAsync(Guid.Empty, Guid.NewGuid(), Guid.NewGuid(), CancellationToken.None))
+    {
+        var id = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+
+        SetupActivityEnsureAccessThrowsBadRequest(id, userId);
+
+        await FluentActions
+            .Awaiting(() => Service.RemoveCategoryFromActivityAsync(id, Guid.NewGuid(), userId, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
+
+        VerifyActivityEnsureAccessCalled(id, userId);
+        VerifyCategoryValidateAccessNotCalled();
+        VerifyActivityIsCategoryLinkedNotCalled();
+        VerifyRemoveCategoryFromActivityNotCalled();
+        VerifySaveChangesNotCalled();
+    }
 
     [Fact]
     public async Task RemoveCategoryFromActivity_ActivityNotFound_ShouldThrowNotFound()
     {
-        var activityId = Guid.NewGuid();
-        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activityId, It.IsAny<CancellationToken>())).ReturnsAsync((Activity?)null);
+        var id = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+
+        SetupActivityEnsureAccessThrowsNotFound(id, userId);
 
         await FluentActions
-            .Awaiting(() => Service.RemoveCategoryFromActivityAsync(activityId, Guid.NewGuid(), Guid.NewGuid(), CancellationToken.None))
+            .Awaiting(() => Service.RemoveCategoryFromActivityAsync(id, Guid.NewGuid(), userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        VerifyActivityEnsureAccessCalled(id, userId);
+        VerifyCategoryValidateAccessNotCalled();
+        VerifyActivityIsCategoryLinkedNotCalled();
+        VerifyRemoveCategoryFromActivityNotCalled();
+        VerifySaveChangesNotCalled();
     }
 
     [Fact]
@@ -91,16 +102,21 @@ public class RemoveCategoryFromActivityAsyncTests : ActivityServiceTestsBase
     {
         var activity = new Activity(Guid.NewGuid(), Guid.NewGuid(), DateTime.MinValue, DateTime.MaxValue);
         var userId = Guid.NewGuid();
+        var categoryId = Guid.Empty;
 
-        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id, It.IsAny<CancellationToken>())).ReturnsAsync(activity);
-        JournalRepositoryMock
-            .Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+        SetupActivityEnsureAccess(activity, userId);
+        SetupCategoryValidateAccessThrowsBadRequest(categoryId, userId);
 
         await FluentActions
-            .Awaiting(() => Service.RemoveCategoryFromActivityAsync(activity.Id, Guid.Empty, userId, CancellationToken.None))
+            .Awaiting(() => Service.RemoveCategoryFromActivityAsync(activity.Id, categoryId, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
+
+        VerifyActivityEnsureAccessCalled(activity.Id, userId);
+        VerifyCategoryValidateAccessCalled(categoryId, userId);
+        VerifyActivityIsCategoryLinkedNotCalled();
+        VerifyRemoveCategoryFromActivityNotCalled();
+        VerifySaveChangesNotCalled();
     }
 
     [Fact]
@@ -110,17 +126,23 @@ public class RemoveCategoryFromActivityAsyncTests : ActivityServiceTestsBase
         var userId = Guid.NewGuid();
         var categoryId = Guid.NewGuid();
 
-        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id, It.IsAny<CancellationToken>())).ReturnsAsync(activity);
-        JournalRepositoryMock
-            .Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
-        CategoryRepositoryMock
-            .Setup(repository => repository.IsUserLinkedAsync(categoryId, userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
+        SetupActivityEnsureAccess(activity, userId);
+        SetupCategoryValidateAccessThrowsNotFound(categoryId, userId);
 
         await FluentActions
             .Awaiting(() => Service.RemoveCategoryFromActivityAsync(activity.Id, categoryId, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        VerifyActivityEnsureAccessCalled(activity.Id, userId);
+        VerifyCategoryValidateAccessCalled(categoryId, userId);
+        VerifyActivityIsCategoryLinkedNotCalled();
+        VerifyRemoveCategoryFromActivityNotCalled();
+        VerifySaveChangesNotCalled();
     }
+    
+    private void VerifyRemoveCategoryFromActivityNotCalled()
+        => ActivityRepositoryMock.Verify(
+            repository => repository.RemoveCategoryFromActivityAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never);
 }

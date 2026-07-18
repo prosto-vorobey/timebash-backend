@@ -1,6 +1,5 @@
 using Timebash.Application.Extensions;
 using Timebash.Application.Extensions.Requests;
-using Timebash.Application.Helpers;
 using Timebash.Core.Contracts;
 using Timebash.Core.DTOs.Requests;
 using Timebash.Core.DTOs.Responses;
@@ -8,6 +7,7 @@ using Timebash.Core.DTOs.Shared;
 using Timebash.Core.Exceptions;
 using Timebash.Core.Repositories;
 using Timebash.Core.Services;
+using Timebash.Core.Services.Access;
 
 namespace Timebash.Application.Services;
 
@@ -15,26 +15,32 @@ public class ActivityService(
     IUnitOfWork unitOfWork,
     IActivityRepository activityRepository,
     ICategoryRepository categoryRepository,
-    IJournalRepository journalRepository) : IActivityService
+    IJournalRepository journalRepository,
+    IActivityAccessService activityAccessService,
+    IJournalAccessService journalAccessService,
+    ICategoryAccessService categoryAccessService) : IActivityService
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IActivityRepository _activityRepository = activityRepository;
     private readonly ICategoryRepository _categoryRepository = categoryRepository;
     private readonly IJournalRepository _journalRepository = journalRepository;
+    private readonly IActivityAccessService _activityAccessService = activityAccessService;
+    private readonly IJournalAccessService _journalAccessService = journalAccessService;
+    private readonly ICategoryAccessService _categoryAccessService = categoryAccessService;
 
     public async Task<ActivityResponse> GetByIdAsync(Guid id, Guid userId, CancellationToken cancellationToken)
-        => (await EntityAccessGuard.EnsureActivityAccessAsync(_activityRepository, _journalRepository, id, userId, cancellationToken)).ToResponse();
+        => (await _activityAccessService.EnsureAccessAsync(id, userId, cancellationToken)).ToResponse();
 
     public async Task<CategoriesListResponse> GetCategoriesByActivityIdAsync(Guid id, Guid userId, CancellationToken cancellationToken)
     {
-        await EntityAccessGuard.ValidateActivityAccessAsync(_activityRepository, id, userId, cancellationToken);
+        await _activityAccessService.ValidateAccessAsync(id, userId, cancellationToken);
         var categories = await _activityRepository.GetCategoriesByActivityIdAsync(id, cancellationToken);
         return new ([.. categories.Select(category => category.ToResponse())]);
     }
 
     public async Task<ActivityResponse> CreateAsync(ActivityRequest request, Guid userId, CancellationToken cancellationToken)
     {
-        var journal = await EntityAccessGuard.EnsureJournalAccessAsync(_journalRepository, request.JournalId, userId, cancellationToken);
+        var journal = await _journalAccessService.EnsureAccessAsync(request.JournalId, userId, cancellationToken);
         
         var activity = request.ToActivity(Guid.NewGuid());
         _activityRepository.Add(activity);
@@ -56,7 +62,7 @@ public class ActivityService(
         Guid userId, 
         CancellationToken cancellationToken)
     {
-        var journal = await EntityAccessGuard.EnsureJournalAccessAsync(_journalRepository, request.JournalId, userId, cancellationToken);
+        var journal = await _journalAccessService.EnsureAccessAsync(request.JournalId, userId, cancellationToken);
 
         var activityIds = request.ConflictResolutions.Select(resolution => resolution.ActivityId).ToHashSet();
         var activities = (await _activityRepository.GetByIdsAsync(activityIds, cancellationToken)).ToList();
@@ -138,13 +144,8 @@ public class ActivityService(
 
     public async Task<bool> AddCategoryToActivityAsync(Guid activityId, Guid categoryId, Guid userId, CancellationToken cancellationToken)
     {
-        var activity = await EntityAccessGuard.EnsureActivityAccessAsync(
-            _activityRepository, 
-            _journalRepository, 
-            activityId, 
-            userId, 
-            cancellationToken);
-        await EntityAccessGuard.ValidateCategoryAccessAsync(_categoryRepository, categoryId, userId, cancellationToken);
+        var activity = await _activityAccessService.EnsureAccessAsync(activityId, userId, cancellationToken);
+        await _categoryAccessService.ValidateAccessAsync(categoryId, userId, cancellationToken);
         if (await _activityRepository.IsCategoryLinkedAsync(activityId, categoryId, cancellationToken)) return false;
 
         _activityRepository.AddCategoryToActivity(activityId, categoryId);
@@ -159,12 +160,7 @@ public class ActivityService(
         Guid userId, 
         CancellationToken cancellationToken)
     {
-        var activity = await EntityAccessGuard.EnsureActivityAccessAsync(
-            _activityRepository, 
-            _journalRepository, 
-            activityId, 
-            userId, 
-            cancellationToken);
+        var activity = await _activityAccessService.EnsureAccessAsync(activityId, userId, cancellationToken);
         if (request.CategoryIds.Count == 0) return false;
 
         var newCategoryIds = await ResolveCategoryIdsAsync(
@@ -181,8 +177,8 @@ public class ActivityService(
 
     public async Task<bool> UpdateAsync(Guid id, ActivityRequest request, Guid userId, CancellationToken cancellationToken)
     {
-        var activity = await EntityAccessGuard.EnsureActivityAccessAsync(_activityRepository, _journalRepository, id, userId, cancellationToken);
-        await EntityAccessGuard.ValidateJournalAccessAsync(_journalRepository, request.JournalId, userId, cancellationToken);
+        var activity = await _activityAccessService.EnsureAccessAsync(id, userId, cancellationToken);
+        await _journalAccessService.ValidateAccessAsync(request.JournalId, userId, cancellationToken);
 
         var isActivityUpdated = activity.ApplyUpdate(request);
         var isCategoriesUpdated = await UpdateCategoriesAsync(activity.Id, request.CategoryIds, userId, cancellationToken);
@@ -198,12 +194,7 @@ public class ActivityService(
         Guid userId, 
         CancellationToken cancellationToken)
     {
-        var activity = await EntityAccessGuard.EnsureActivityAccessAsync(
-            _activityRepository, 
-            _journalRepository, 
-            activityId, 
-            userId, 
-            cancellationToken);
+        var activity = await _activityAccessService.EnsureAccessAsync(activityId, userId, cancellationToken);
 
         var isUpdated = await UpdateCategoriesAsync(activity.Id, request.CategoryIds, userId, cancellationToken);
         if (isUpdated) await ApplyUpdatedChangesAsync(activity, cancellationToken);
@@ -213,7 +204,7 @@ public class ActivityService(
 
     public async Task DeleteAsync(Guid id, Guid userId, CancellationToken cancellationToken)
     {
-        var activity = await EntityAccessGuard.EnsureActivityAccessAsync(_activityRepository, _journalRepository, id, userId, cancellationToken);
+        var activity = await _activityAccessService.EnsureAccessAsync(id, userId, cancellationToken);
         var journal = await _journalRepository.GetByIdAsync(activity.JournalId, cancellationToken) ?? throw new NotFoundException();
 
         _activityRepository.Delete(activity);
@@ -223,13 +214,8 @@ public class ActivityService(
 
     public async Task<bool> RemoveCategoryFromActivityAsync(Guid activityId, Guid categoryId, Guid userId, CancellationToken cancellationToken)
     {
-        var activity = await EntityAccessGuard.EnsureActivityAccessAsync(
-            _activityRepository, 
-            _journalRepository, 
-            activityId, 
-            userId, 
-            cancellationToken);
-        await EntityAccessGuard.ValidateCategoryAccessAsync(_categoryRepository, categoryId, userId, cancellationToken);
+        var activity = await _activityAccessService.EnsureAccessAsync(activityId, userId, cancellationToken);
+        await _categoryAccessService.ValidateAccessAsync(categoryId, userId, cancellationToken);
         if (!await _activityRepository.IsCategoryLinkedAsync(activityId, categoryId, cancellationToken)) return false;
 
         await _activityRepository.RemoveCategoryFromActivityAsync(activityId, categoryId, cancellationToken);

@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Moq;
 using Timebash.Core.DTOs.Requests;
 using Timebash.Core.Entities;
 using Timebash.Core.Exceptions;
@@ -23,21 +22,22 @@ public class UpdateActivityCategoriesAsyncTests : ActivityServiceTestsBase
         var currentUpdatedTime = activity.UpdatedAt;
         var request = new ActivityCategoriesRequest(categoryIds);
 
-        SetupActivityEnsureAccess(activity, userId);
-        SetupActivityGetCategoryIdsByActivityId(activity.Id, []);
+        ActivityAccessServiceMock.SetupEnsureAccess(activity, userId);
+        SetupGetCategoryIdsByActivityId(activity.Id, []);
         SetupCategoryGetByIds(clearedCategoryIds, categories);
+        SetupAddCategoriesToActivity(activity.Id, clearedCategoryIds);
+        UnitOfWorkMock.SetupSaveChanges();
 
         var result = await Service.UpdateActivityCategoriesAsync(activity.Id, request, userId, CancellationToken.None);
 
         result.Should().BeTrue();
         activity.UpdatedAt.Should().BeAfter(currentUpdatedTime);
 
-        VerifyActivityEnsureAccessCalled(activity.Id, userId);
-        VerifyActivityGetCategoryIdsByActivityIdCalled(activity.Id);
+        ActivityAccessServiceMock.VerifyEnsureAccessCalled(activity.Id, userId);
+        VerifyGetCategoryIdsByActivityIdCalled(activity.Id);
         VerifyCategoryGetByIdsCalled(clearedCategoryIds);
-        VerifyActivityAddCategoriesToActivityCalled(activity.Id, clearedCategoryIds);
-        VerifySaveChangesCalled();
-        VerifyClearActivityCategoriesNotCalled();
+        VerifyAddCategoriesToActivityCalled(activity.Id, clearedCategoryIds);
+        UnitOfWorkMock.VerifySaveChangesCalled();
     }
 
     [Fact]
@@ -48,20 +48,20 @@ public class UpdateActivityCategoriesAsyncTests : ActivityServiceTestsBase
         var currentUpdatedTime = activity.UpdatedAt;
         var request = new ActivityCategoriesRequest([]);
 
-        SetupActivityEnsureAccess(activity, userId);
-        SetupActivityGetCategoryIdsByActivityId(activity.Id, [Guid.NewGuid()]);
+        ActivityAccessServiceMock.SetupEnsureAccess(activity, userId);
+        SetupGetCategoryIdsByActivityId(activity.Id, [Guid.NewGuid()]);
+        SetupClearActivityCategories(activity.Id);
+        UnitOfWorkMock.SetupSaveChanges();
 
         var result = await Service.UpdateActivityCategoriesAsync(activity.Id, request, userId, CancellationToken.None);
 
         result.Should().BeTrue();
         activity.UpdatedAt.Should().BeAfter(currentUpdatedTime);
 
-        VerifyActivityEnsureAccessCalled(activity.Id, userId);
-        VerifyActivityGetCategoryIdsByActivityIdCalled(activity.Id);
+        ActivityAccessServiceMock.VerifyEnsureAccessCalled(activity.Id, userId);
+        VerifyGetCategoryIdsByActivityIdCalled(activity.Id);
         VerifyClearActivityCategoriesCalled(activity.Id);
-        VerifySaveChangesCalled();
-        VerifyCategoryGetByIdsNotCalled();
-        VerifyActivityAddCategoriesToActivityNotCalled();
+        UnitOfWorkMock.VerifySaveChangesCalled();
     }
 
     [Theory]
@@ -74,20 +74,16 @@ public class UpdateActivityCategoriesAsyncTests : ActivityServiceTestsBase
         var currentUpdateTime = activity.UpdatedAt;
         var request = new ActivityCategoriesRequest(categoryIds);
 
-        SetupActivityEnsureAccess(activity, userId);
-        SetupActivityGetCategoryIdsByActivityId(activity.Id, clearedCategoryIds);
+        ActivityAccessServiceMock.SetupEnsureAccess(activity, userId);
+        SetupGetCategoryIdsByActivityId(activity.Id, clearedCategoryIds);
 
         var result = await Service.UpdateActivityCategoriesAsync(activity.Id, request, userId, CancellationToken.None);
 
         result.Should().BeFalse();
         activity.UpdatedAt.Should().Be(currentUpdateTime);
 
-        VerifyActivityEnsureAccessCalled(activity.Id, userId);
-        VerifyActivityGetCategoryIdsByActivityIdCalled(activity.Id);
-        VerifyClearActivityCategoriesNotCalled();
-        VerifyCategoryGetByIdsNotCalled();
-        VerifyActivityAddCategoriesToActivityNotCalled();
-        VerifySaveChangesNotCalled();
+        ActivityAccessServiceMock.VerifyEnsureAccessCalled(activity.Id, userId);
+        VerifyGetCategoryIdsByActivityIdCalled(activity.Id);
     }
 
     [Fact]
@@ -96,19 +92,14 @@ public class UpdateActivityCategoriesAsyncTests : ActivityServiceTestsBase
         var id = Guid.Empty;
         var userId = Guid.NewGuid();
 
-        SetupActivityEnsureAccessThrowsBadRequest(id, userId);
+        ActivityAccessServiceMock.SetupEnsureAccessThrowsBadRequest(id, userId);
 
         await FluentActions
             .Awaiting(() => Service.UpdateActivityCategoriesAsync(id, new([]), userId, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
 
-        VerifyActivityEnsureAccessCalled(id, userId);
-        VerifyActivityGetCategoryIdsByActivityIdNotCalled();
-        VerifyClearActivityCategoriesNotCalled();
-        VerifyCategoryGetByIdsNotCalled();
-        VerifyActivityAddCategoriesToActivityNotCalled();
-        VerifySaveChangesNotCalled();
+        ActivityAccessServiceMock.VerifyEnsureAccessCalled(id, userId);
     }
 
     [Fact]
@@ -117,19 +108,14 @@ public class UpdateActivityCategoriesAsyncTests : ActivityServiceTestsBase
         var id = Guid.NewGuid();
         var userId = Guid.NewGuid();
 
-        SetupActivityEnsureAccessThrowsNotFound(id, userId);
+        ActivityAccessServiceMock.SetupEnsureAccessThrowsNotFound(id, userId);
 
         await FluentActions
             .Awaiting(() => Service.UpdateActivityCategoriesAsync(id, new([]), userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
 
-        VerifyActivityEnsureAccessCalled(id, userId);
-        VerifyActivityGetCategoryIdsByActivityIdNotCalled();
-        VerifyClearActivityCategoriesNotCalled();
-        VerifyCategoryGetByIdsNotCalled();
-        VerifyActivityAddCategoriesToActivityNotCalled();
-        VerifySaveChangesNotCalled();
+        ActivityAccessServiceMock.VerifyEnsureAccessCalled(id, userId);
     }
 
     [Fact]
@@ -142,20 +128,16 @@ public class UpdateActivityCategoriesAsyncTests : ActivityServiceTestsBase
                 .ToList();
         var request = new ActivityCategoriesRequest(categoryIds);
 
-        SetupActivityEnsureAccess(activity, userId);
-        SetupActivityGetCategoryIdsByActivityId(activity.Id, []);
+        ActivityAccessServiceMock.SetupEnsureAccess(activity, userId);
+        SetupGetCategoryIdsByActivityId(activity.Id, []);
 
         await FluentActions
             .Awaiting(() => Service.UpdateActivityCategoriesAsync(activity.Id, request, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
 
-        VerifyActivityEnsureAccessCalled(activity.Id, userId);
-        VerifyActivityGetCategoryIdsByActivityIdCalled(activity.Id);
-        VerifyClearActivityCategoriesNotCalled();
-        VerifyCategoryGetByIdsNotCalled();
-        VerifyActivityAddCategoriesToActivityNotCalled();
-        VerifySaveChangesNotCalled();
+        ActivityAccessServiceMock.VerifyEnsureAccessCalled(activity.Id, userId);
+        VerifyGetCategoryIdsByActivityIdCalled(activity.Id);
     }
 
     [Theory]
@@ -169,8 +151,8 @@ public class UpdateActivityCategoriesAsyncTests : ActivityServiceTestsBase
         var clearedCategoryIds = GetClearedCategoryIds(categoryIds);
         var request = new ActivityCategoriesRequest(categoryIds);
 
-        SetupActivityEnsureAccess(activity, userId);
-        SetupActivityGetCategoryIdsByActivityId(activity.Id, []);
+        ActivityAccessServiceMock.SetupEnsureAccess(activity, userId);
+        SetupGetCategoryIdsByActivityId(activity.Id, []);
         SetupCategoryGetByIds(clearedCategoryIds, categories.Skip(1));
 
         await FluentActions
@@ -178,12 +160,9 @@ public class UpdateActivityCategoriesAsyncTests : ActivityServiceTestsBase
             .Should()
             .ThrowAsync<BadRequestException>();
 
-        VerifyActivityEnsureAccessCalled(activity.Id, userId);
-        VerifyActivityGetCategoryIdsByActivityIdCalled(activity.Id);
+        ActivityAccessServiceMock.VerifyEnsureAccessCalled(activity.Id, userId);
+        VerifyGetCategoryIdsByActivityIdCalled(activity.Id);
         VerifyCategoryGetByIdsCalled(clearedCategoryIds);
-        VerifyClearActivityCategoriesNotCalled();
-        VerifyActivityAddCategoriesToActivityNotCalled();
-        VerifySaveChangesNotCalled();
     }
 
     [Theory]
@@ -198,8 +177,8 @@ public class UpdateActivityCategoriesAsyncTests : ActivityServiceTestsBase
         categories[0] = new Category(categories[0].Id, Guid.NewGuid(), Faker.Lorem.Word(), "#000000");
         var request = new ActivityCategoriesRequest(categoryIds);
 
-        SetupActivityEnsureAccess(activity, userId);
-        SetupActivityGetCategoryIdsByActivityId(activity.Id, []);
+        ActivityAccessServiceMock.SetupEnsureAccess(activity, userId);
+        SetupGetCategoryIdsByActivityId(activity.Id, []);
         SetupCategoryGetByIds(clearedCategoryIds, categories);
 
         await FluentActions
@@ -207,11 +186,8 @@ public class UpdateActivityCategoriesAsyncTests : ActivityServiceTestsBase
             .Should()
             .ThrowAsync<NotFoundException>();
 
-        VerifyActivityEnsureAccessCalled(activity.Id, userId);
-        VerifyActivityGetCategoryIdsByActivityIdCalled(activity.Id);
+        ActivityAccessServiceMock.VerifyEnsureAccessCalled(activity.Id, userId);
+        VerifyGetCategoryIdsByActivityIdCalled(activity.Id);
         VerifyCategoryGetByIdsCalled(clearedCategoryIds);
-        VerifyClearActivityCategoriesNotCalled();
-        VerifyActivityAddCategoriesToActivityNotCalled();
-        VerifySaveChangesNotCalled();
     }
 }

@@ -43,9 +43,9 @@ public class ActivityService(
         var journal = await _journalAccessService.EnsureAccessAsync(request.JournalId, userId, cancellationToken);
         
         var activity = request.ToActivity(Guid.NewGuid());
-        _activityRepository.Add(activity);
-
         var clearedCategoryIds = (await ResolveCategoryIdsAsync(userId, request.CategoryIds, cancellationToken)).ToList();
+
+        _activityRepository.Add(activity);
         if (clearedCategoryIds.Count > 0)
         {
             _activityRepository.AddCategoriesToActivity(activity.Id, clearedCategoryIds);
@@ -70,9 +70,9 @@ public class ActivityService(
             throw new NotFoundException();
 
         var newActivity = request.ToActivity(Guid.NewGuid());
-        _activityRepository.Add(newActivity);
-
         var clearedCategoryIds = (await ResolveCategoryIdsAsync(userId, request.CategoryIds, cancellationToken)).ToList();
+
+        _activityRepository.Add(newActivity);
         if (clearedCategoryIds.Count > 0)
         {
             _activityRepository.AddCategoriesToActivity(newActivity.Id, clearedCategoryIds);

@@ -23,11 +23,13 @@ public class CreateAsyncTests : ActivityServiceTestsBase
         var request = new ActivityRequest(journal.Id, string.Empty, DateTime.MinValue, DateTime.MaxValue, categoryIds);
         Activity? capturedActivity = null;
 
-        SetupJournalEnsureAccess(journal);
+        JournalAccessServiceMock.SetupEnsureAccess(journal);
         ActivityRepositoryMock
             .Setup(repository => repository.Add(It.IsAny<Activity>()))
             .Callback<Activity>(activity => capturedActivity = activity);
         SetupCategoryGetByIds(clearedCategoryIds, categories);
+        SetupAddCategoriesToActivity(clearedCategoryIds);
+        UnitOfWorkMock.SetupSaveChanges();
 
         var result = await Service.CreateAsync(request, userId, CancellationToken.None);
 
@@ -42,10 +44,10 @@ public class CreateAsyncTests : ActivityServiceTestsBase
         result.Should().BeEquivalentTo(capturedActivity.ToResponse());
         journal.UpdatedAt.Should().BeAfter(currentUpdatedTime);
 
-        VerifyJournalEnsureAccessCalled(journal.Id, journal.UserId);
+        JournalAccessServiceMock.VerifyEnsureAccessCalled(journal.Id, journal.UserId);
         VerifyCategoryGetByIdsCalled(clearedCategoryIds);
-        VerifyActivityAddCategoriesToActivityCalled(capturedActivity.Id, clearedCategoryIds);
-        VerifySaveChangesCalled();
+        VerifyAddCategoriesToActivityCalled(capturedActivity.Id, clearedCategoryIds);
+        UnitOfWorkMock.VerifySaveChangesCalled();
     }
 
     [Theory]
@@ -57,10 +59,11 @@ public class CreateAsyncTests : ActivityServiceTestsBase
         var request = new ActivityRequest(journal.Id, string.Empty, DateTime.MinValue, DateTime.MaxValue, categoryIds);
         Activity? capturedActivity = null;
 
-        SetupJournalEnsureAccess(journal);
+        JournalAccessServiceMock.SetupEnsureAccess(journal);
         ActivityRepositoryMock
             .Setup(repository => repository.Add(It.IsAny<Activity>()))
             .Callback<Activity>(activity => capturedActivity = activity);
+        UnitOfWorkMock.SetupSaveChanges();
 
         var result = await Service.CreateAsync(request, journal.UserId, CancellationToken.None);
 
@@ -75,10 +78,8 @@ public class CreateAsyncTests : ActivityServiceTestsBase
         result.Should().BeEquivalentTo(capturedActivity.ToResponse());
         journal.UpdatedAt.Should().BeAfter(currentUpdatedTime);
 
-        VerifyJournalEnsureAccessCalled(journal.Id, journal.UserId);
-        VerifySaveChangesCalled();
-        VerifyCategoryGetByIdsNotCalled();
-        VerifyActivityAddCategoriesToActivityNotCalled();
+        JournalAccessServiceMock.VerifyEnsureAccessCalled(journal.Id, journal.UserId);
+        UnitOfWorkMock.VerifySaveChangesCalled();
     }
 
     [Fact]
@@ -87,7 +88,7 @@ public class CreateAsyncTests : ActivityServiceTestsBase
         var journalId = Guid.Empty;
         var userId = Guid.NewGuid();
 
-        SetupJournalEnsureAccessThrowsBadRequest(journalId, userId);
+        JournalAccessServiceMock.SetupEnsureAccessThrowsBadRequest(journalId, userId);
 
         await FluentActions
             .Awaiting(() => Service.CreateAsync(
@@ -96,11 +97,7 @@ public class CreateAsyncTests : ActivityServiceTestsBase
             .Should()
             .ThrowAsync<BadRequestException>();
 
-        VerifyJournalEnsureAccessCalled(journalId, userId);
-        VerifyActivityAddNotCalled();
-        VerifyCategoryGetByIdsNotCalled();
-        VerifyActivityAddCategoriesToActivityNotCalled();
-        VerifySaveChangesNotCalled();
+        JournalAccessServiceMock.VerifyEnsureAccessCalled(journalId, userId);
     }
 
     [Fact]
@@ -109,7 +106,7 @@ public class CreateAsyncTests : ActivityServiceTestsBase
         var journalId = Guid.NewGuid();
         var userId = Guid.NewGuid();
 
-        SetupJournalEnsureAccessThrowsNotFound(journalId, userId);
+        JournalAccessServiceMock.SetupEnsureAccessThrowsNotFound(journalId, userId);
 
         await FluentActions
             .Awaiting(() => Service.CreateAsync(
@@ -118,11 +115,7 @@ public class CreateAsyncTests : ActivityServiceTestsBase
             .Should()
             .ThrowAsync<NotFoundException>();
 
-        VerifyJournalEnsureAccessCalled(journalId, userId);
-        VerifyActivityAddNotCalled();
-        VerifyCategoryGetByIdsNotCalled();
-        VerifyActivityAddCategoriesToActivityNotCalled();
-        VerifySaveChangesNotCalled();
+        JournalAccessServiceMock.VerifyEnsureAccessCalled(journalId, userId);
     }
 
     [Theory]
@@ -133,7 +126,8 @@ public class CreateAsyncTests : ActivityServiceTestsBase
         var clearedCategoryIds = GetClearedCategoryIds(categoryIds);
         var request = new ActivityRequest(journal.Id, string.Empty, DateTime.MinValue, DateTime.MaxValue, categoryIds);
 
-        SetupCategoryValidateAccessThrowsBadRequest(journal.Id, userId);
+        JournalAccessServiceMock.SetupEnsureAccess(journal);
+        CategoryAccessServiceMock.SetupValidateAccessThrowsBadRequest(journal.Id, userId);
         SetupCategoryGetByIds(clearedCategoryIds, categories.Skip(1));
 
         await FluentActions
@@ -141,10 +135,8 @@ public class CreateAsyncTests : ActivityServiceTestsBase
             .Should()
             .ThrowAsync<BadRequestException>();
 
-        VerifyJournalEnsureAccessCalled(journal.Id, userId);
+        JournalAccessServiceMock.VerifyEnsureAccessCalled(journal.Id, userId);
         VerifyCategoryGetByIdsCalled(clearedCategoryIds);
-        VerifyActivityAddCategoriesToActivityNotCalled();
-        VerifySaveChangesNotCalled();
     }
 
     [Theory]
@@ -156,7 +148,8 @@ public class CreateAsyncTests : ActivityServiceTestsBase
         var request = new ActivityRequest(journal.Id, string.Empty, DateTime.MinValue, DateTime.MaxValue, categoryIds);
         categories[0] = new Category(categories[0].Id, Guid.NewGuid(), Faker.Lorem.Word(), "#000000");
 
-        SetupCategoryValidateAccessThrowsBadRequest(journal.Id, userId);
+        JournalAccessServiceMock.SetupEnsureAccess(journal);
+        CategoryAccessServiceMock.SetupValidateAccessThrowsBadRequest(journal.Id, userId);
         SetupCategoryGetByIds(clearedCategoryIds, categories);
 
         await FluentActions
@@ -164,11 +157,7 @@ public class CreateAsyncTests : ActivityServiceTestsBase
             .Should()
             .ThrowAsync<NotFoundException>();
 
-        VerifyJournalEnsureAccessCalled(journal.Id, userId);
+        JournalAccessServiceMock.VerifyEnsureAccessCalled(journal.Id, userId);
         VerifyCategoryGetByIdsCalled(clearedCategoryIds);
-        VerifyActivityAddCategoriesToActivityNotCalled();
-        VerifySaveChangesNotCalled();
     }
-
-    private void VerifyActivityAddNotCalled() => ActivityRepositoryMock.Verify(repository => repository.Add(It.IsAny<Activity>()), Times.Never);
 }

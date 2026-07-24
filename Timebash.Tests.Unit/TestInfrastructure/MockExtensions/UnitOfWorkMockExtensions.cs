@@ -1,7 +1,7 @@
 using Moq;
 using Timebash.Core.Contracts;
 
-namespace Timebash.Tests.Unit.Application.Services;
+namespace Timebash.Tests.Unit.TestInfrastructure.MockExtensions;
 
 public static class UnitOfWorkMockExtensions
 {

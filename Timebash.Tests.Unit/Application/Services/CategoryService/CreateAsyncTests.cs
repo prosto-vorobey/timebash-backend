@@ -4,6 +4,7 @@ using Timebash.Application.Extensions;
 using Timebash.Application.Extensions.Requests;
 using Timebash.Core.DTOs.Requests;
 using Timebash.Core.Entities;
+using Timebash.Tests.Unit.TestInfrastructure.MockExtensions;
 
 namespace Timebash.Tests.Unit.Application.Services.CategoryService;
 

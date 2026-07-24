@@ -2,7 +2,7 @@ using Moq;
 using Timebash.Core.Entities;
 using Timebash.Core.Repositories;
 
-namespace Timebash.Tests.Unit.Application.Services;
+namespace Timebash.Tests.Unit.TestInfrastructure.MockExtensions.Repositories;
 
 public static class JournalRepositoryMockExtensions
 {

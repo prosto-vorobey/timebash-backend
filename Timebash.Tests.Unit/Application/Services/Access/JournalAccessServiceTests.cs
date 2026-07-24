@@ -5,6 +5,7 @@ using Timebash.Application.Services.Access;
 using Timebash.Core.Entities;
 using Timebash.Core.Exceptions;
 using Timebash.Core.Repositories;
+using Timebash.Tests.Unit.TestInfrastructure.MockExtensions.Repositories;
 
 namespace Timebash.Tests.Unit.Application.Services.Access;
 

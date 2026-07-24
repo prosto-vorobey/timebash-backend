@@ -2,6 +2,8 @@ using FluentAssertions;
 using Timebash.Application.Extensions;
 using Timebash.Core.Entities;
 using Timebash.Core.Exceptions;
+using Timebash.Tests.Unit.TestInfrastructure.MockExtensions.AccessServices;
+using Timebash.Tests.Unit.TestInfrastructure.MockExtensions.Repositories;
 
 namespace Timebash.Tests.Unit.Application.Services.MeService;
 

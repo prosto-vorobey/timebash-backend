@@ -8,6 +8,8 @@ using Timebash.Core.Entities;
 using Timebash.Core.Exceptions;
 using Timebash.Core.Extensions;
 using Timebash.Tests.Unit.Application.Services.ActivityService.TestData;
+using Timebash.Tests.Unit.TestInfrastructure.MockExtensions;
+using Timebash.Tests.Unit.TestInfrastructure.MockExtensions.AccessServices;
 
 namespace Timebash.Tests.Unit.Application.Services.ActivityService;
 

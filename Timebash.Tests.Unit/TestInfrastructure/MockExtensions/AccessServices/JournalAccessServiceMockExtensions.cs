@@ -3,7 +3,7 @@ using Timebash.Core.Entities;
 using Timebash.Core.Exceptions;
 using Timebash.Core.Services.Access;
 
-namespace Timebash.Tests.Unit.Application.Services;
+namespace Timebash.Tests.Unit.TestInfrastructure.MockExtensions.AccessServices;
 
 public static class JournalAccessServiceMockExtensions
 {

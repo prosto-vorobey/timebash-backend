@@ -6,6 +6,7 @@ using Timebash.Core.Entities;
 using Timebash.Core.Exceptions;
 using Timebash.Core.Services;
 using Timebash.Tests.Unit.Application.Services.JournalService.TestData;
+using Timebash.Tests.Unit.TestInfrastructure.MockExtensions.AccessServices;
 
 namespace Timebash.Tests.Unit.Application.Services.JournalService;
 

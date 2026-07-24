@@ -14,9 +14,10 @@ public class CreateAsyncTests : CategoryServiceTestsBase
     {
         var request = new CategoryRequest(Faker.Lorem.Word(), "#000000", [.. Faker.Lorem.Words()]);
         var userId = Guid.NewGuid();
-
         var capturedCategories = new List<Category>();
+
         RepositoryMock.Setup(repository => repository.Add(It.IsAny<Category>())).Callback<Category>(capturedCategories.Add);
+        UnitOfWorkMock.SetupSaveChanges();
 
         var result = await Service.CreateAsync(request, userId, CancellationToken.None);
 
@@ -31,6 +32,6 @@ public class CreateAsyncTests : CategoryServiceTestsBase
                 .Excluding(category => category.UpdatedAt));
 
         result.Should().BeEquivalentTo(capturedCategory.ToResponse());
-        VerifySaveChangesCalled();
+        UnitOfWorkMock.VerifySaveChangesCalled();
     }
 }

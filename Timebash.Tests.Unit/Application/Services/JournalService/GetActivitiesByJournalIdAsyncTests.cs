@@ -26,13 +26,13 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
                 .OrderBy(activity => activity.StartTime)
                 .Select(activity => activity.ToResponse())]);
 
-        SetupValidateAccess(journal.Id, journal.UserId);
+        AccessServiceMock.SetupValidateAccess(journal.Id, journal.UserId);
         ActivityRepositoryMock.Setup(repository => repository.GetByJournalIdAsync(journal.Id, It.IsAny<CancellationToken>())).ReturnsAsync(activities);
 
         var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, null, null, journal.UserId, CancellationToken.None);
 
         result.Should().BeEquivalentTo(expected);
-        VerifyValidateAccessCalled(journal.Id, journal.UserId);
+        AccessServiceMock.VerifyValidateAccessCalled(journal.Id, journal.UserId);
         ActivityRepositoryMock.Verify(repository => repository.GetByJournalIdAsync(journal.Id, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -49,14 +49,14 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
                 .OrderBy(activity => activity.StartTime)
                 .Select(activity => activity.ToResponse())]);
 
-        SetupValidateAccess(journal.Id, journal.UserId);
+        AccessServiceMock.SetupValidateAccess(journal.Id, journal.UserId);
         ActivityQueryServiceMock.Setup(service => service.GetActivitiesForJournalAsync(journal.Id, start, null, ActivityDateFilterMode.ByStartTime))
             .Returns(expectedActivities.ToAsyncEnumerable());
 
         var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, start, null, journal.UserId, CancellationToken.None);
 
         result.Should().BeEquivalentTo(expected);
-        VerifyValidateAccessCalled(journal.Id, journal.UserId);
+        AccessServiceMock.VerifyValidateAccessCalled(journal.Id, journal.UserId);
         VerifyGetActivitiesForJournalCalled(journal.Id, start, null);
     }
 
@@ -73,14 +73,14 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
                 .OrderBy(activity => activity.StartTime)
                 .Select(activity => activity.ToResponse())]);
 
-        SetupValidateAccess(journal.Id, journal.UserId);
+        AccessServiceMock.SetupValidateAccess(journal.Id, journal.UserId);
         ActivityQueryServiceMock.Setup(service => service.GetActivitiesForJournalAsync(journal.Id, null, end, ActivityDateFilterMode.ByStartTime))
             .Returns(expectedActivities.ToAsyncEnumerable());
 
         var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, null, end, journal.UserId, CancellationToken.None);
 
         result.Should().BeEquivalentTo(expected);
-        VerifyValidateAccessCalled(journal.Id, journal.UserId);
+        AccessServiceMock.VerifyValidateAccessCalled(journal.Id, journal.UserId);
         VerifyGetActivitiesForJournalCalled(journal.Id, null, end);
     }
 
@@ -98,14 +98,14 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
                 .OrderBy(activity => activity.StartTime)
                 .Select(activity => activity.ToResponse())]);
 
-        SetupValidateAccess(journal.Id, journal.UserId);
+        AccessServiceMock.SetupValidateAccess(journal.Id, journal.UserId);
         ActivityQueryServiceMock.Setup(service => service.GetActivitiesForJournalAsync(journal.Id, start, end, ActivityDateFilterMode.ByStartTime))
             .Returns(expectedActivities.ToAsyncEnumerable());
 
         var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, start, end, journal.UserId, CancellationToken.None);
 
         result.Should().BeEquivalentTo(expected);
-        VerifyValidateAccessCalled(journal.Id, journal.UserId);
+        AccessServiceMock.VerifyValidateAccessCalled(journal.Id, journal.UserId);
         VerifyGetActivitiesForJournalCalled(journal.Id, start, end);
     }
 
@@ -115,14 +115,14 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
         var id = Guid.Empty;
         var userId = Guid.NewGuid();
 
-        SetupValidateAccessThrowsBadRequest(id, userId);
+        AccessServiceMock.SetupValidateAccessThrowsBadRequest(id, userId);
 
         await FluentActions
             .Awaiting(() => Service.GetActivitiesByJournalIdAsync(id, null, null, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
 
-        VerifyValidateAccessCalled(id, userId);
+        AccessServiceMock.VerifyValidateAccessCalled(id, userId);
         VerifyGetActivitiesByJournalIdNotCalled();
         VerifyGetActivitiesForJournalNotCalled();
     }
@@ -133,14 +133,14 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
         var id = Guid.NewGuid();
         var userId = Guid.NewGuid();
 
-        SetupValidateAccessThrowsNotFound(id, userId);
+        AccessServiceMock.SetupValidateAccessThrowsNotFound(id, userId);
 
         await FluentActions
             .Awaiting(() => Service.GetActivitiesByJournalIdAsync(id, null, null, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
 
-        VerifyValidateAccessCalled(id, userId);
+        AccessServiceMock.VerifyValidateAccessCalled(id, userId);
         VerifyGetActivitiesByJournalIdNotCalled();
         VerifyGetActivitiesForJournalNotCalled();
     }

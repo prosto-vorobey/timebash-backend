@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Moq;
 using Timebash.Application.Extensions;
 using Timebash.Core.DTOs.Requests;
 using Timebash.Core.Entities;
@@ -19,7 +18,8 @@ public class UpdateAsyncTests : JournalServiceTestsBase
         var expected = new Journal(journal.Id, journal.UserId, journal.Name);
         expected.ApplyUpdate(request);
 
-        SetupEnsureAccess(journal);
+        AccessServiceMock.SetupEnsureAccess(journal);
+        UnitOfWorkMock.SetupSaveChanges();
 
         var result = await Service.UpdateAsync(journal.Id, request, journal.UserId, CancellationToken.None);
 
@@ -31,8 +31,8 @@ public class UpdateAsyncTests : JournalServiceTestsBase
                 .Excluding(journal => journal.CreatedAt)
                 .Excluding(journal => journal.UpdatedAt));
 
-        VerifyEnsureAccessCalled(journal.Id, journal.UserId);
-        VerifySaveChangesCalled();
+        AccessServiceMock.VerifyEnsureAccessCalled(journal.Id, journal.UserId);
+        UnitOfWorkMock.VerifySaveChangesCalled();
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public class UpdateAsyncTests : JournalServiceTestsBase
         var currentUpdateTime = journal.UpdatedAt;
         var expected = new Journal(journal.Id, journal.UserId, journal.Name);
 
-        SetupEnsureAccess(journal);
+        AccessServiceMock.SetupEnsureAccess(journal);
 
         var result = await Service.UpdateAsync(journal.Id, request, journal.UserId, CancellationToken.None);
 
@@ -56,8 +56,7 @@ public class UpdateAsyncTests : JournalServiceTestsBase
                 .Excluding(journal => journal.CreatedAt)
                 .Excluding(journal => journal.UpdatedAt));
 
-        VerifyEnsureAccessCalled(journal.Id, journal.UserId);
-        VerifySaveChangesNotCalled();
+        AccessServiceMock.VerifyEnsureAccessCalled(journal.Id, journal.UserId);
     }
 
     [Fact]
@@ -66,15 +65,14 @@ public class UpdateAsyncTests : JournalServiceTestsBase
         var id = Guid.Empty;
         var userId = Guid.NewGuid();
 
-        SetupEnsureAccessThrowsBadRequest(id, userId);
+        AccessServiceMock.SetupEnsureAccessThrowsBadRequest(id, userId);
 
         await FluentActions
             .Awaiting(() => Service.UpdateAsync(id, new JournalRequest(Faker.Lorem.Word()), userId, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
 
-        VerifyEnsureAccessCalled(id, userId);
-        VerifySaveChangesNotCalled();
+        AccessServiceMock.VerifyEnsureAccessCalled(id, userId);
     }
 
     [Fact]
@@ -83,14 +81,13 @@ public class UpdateAsyncTests : JournalServiceTestsBase
         var id = Guid.NewGuid();
         var userId = Guid.NewGuid();
 
-        SetupEnsureAccessThrowsNotFound(id, userId);
+        AccessServiceMock.SetupEnsureAccessThrowsNotFound(id, userId);
 
         await FluentActions
             .Awaiting(() => Service.UpdateAsync(id, new JournalRequest(Faker.Lorem.Word()), userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
 
-        VerifyEnsureAccessCalled(id, userId);
-        VerifySaveChangesNotCalled();
+        AccessServiceMock.VerifyEnsureAccessCalled(id, userId);
     }
 }

@@ -12,14 +12,17 @@ public class DeleteAsyncTests : MeServiceTestsBase
     {
         var user = new User(Guid.NewGuid(), Faker.Internet.UserName(), Faker.Internet.Email());
 
-        SetupUserEnsureAccess(user);
+        UserAccessServiceMock.SetupEnsureAccess(user);
+        SettingsRepositoryMock.Setup(repository => repository.DeleteAsync(user.Id, CancellationToken.None)).Returns(Task.CompletedTask);
+        UserRepositoryMock.Setup(repository => repository.Delete(user));
+        UnitOfWorkMock.SetupSaveChanges();
 
         await Service.DeleteAsync(user.Id, CancellationToken.None);
 
-        VerifyEnsureAccessCalled(user.Id);
+        UserAccessServiceMock.VerifyEnsureAccessCalled(user.Id);
         SettingsRepositoryMock.Verify(repository => repository.DeleteAsync(user.Id, It.IsAny<CancellationToken>()), Times.Once);
         UserRepositoryMock.Verify(repository => repository.Delete(user), Times.Once);
-        VerifySaveChangesCalled();
+        UnitOfWorkMock.VerifySaveChangesCalled();
     }
 
     [Fact]
@@ -27,17 +30,14 @@ public class DeleteAsyncTests : MeServiceTestsBase
     {
         var id = Guid.Empty;
 
-        SetupUserEnsureAccessThrowsBadRequest(id);
+        UserAccessServiceMock.SetupEnsureAccessThrowsBadRequest(id);
 
         await FluentActions
             .Awaiting(() => Service.DeleteAsync(id, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
 
-        VerifyEnsureAccessCalled(id);
-        VerifySettingsDeleteNotCalled();
-        VerifyUserDeleteNotCalled();
-        VerifySaveChangesNotCalled();
+        UserAccessServiceMock.VerifyEnsureAccessCalled(id);
     }
 
     [Fact]
@@ -45,22 +45,13 @@ public class DeleteAsyncTests : MeServiceTestsBase
     {
         var id = Guid.NewGuid();
 
-        SetupUserEnsureAccessThrowsNotFound(id);
+        UserAccessServiceMock.SetupEnsureAccessThrowsNotFound(id);
 
         await FluentActions
             .Awaiting(() => Service.DeleteAsync(id, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
 
-        VerifyEnsureAccessCalled(id);
-        VerifySettingsDeleteNotCalled();
-        VerifyUserDeleteNotCalled();
-        VerifySaveChangesNotCalled();
+        UserAccessServiceMock.VerifyEnsureAccessCalled(id);
     }
-
-    private void VerifyUserDeleteNotCalled()
-        => UserRepositoryMock.Verify(repository => repository.Delete(It.IsAny<User>()), Times.Never);
-
-    private void VerifySettingsDeleteNotCalled()
-        => SettingsRepositoryMock.Verify(repository => repository.DeleteAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
 }

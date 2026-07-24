@@ -17,12 +17,12 @@ public class GetByIdAsyncTests : CategoryServiceTestsBase
         };
         var expected = category.ToResponse();
 
-        SetupEnsureAccess(category);
+        AccessServiceMock.SetupEnsureAccess(category);
 
         var result = await Service.GetByIdAsync(category.Id, category.UserId, CancellationToken.None);
         
         result.Should().BeEquivalentTo(expected);
-        VerifyEnsureAccessCalled(category.Id, category.UserId);
+        AccessServiceMock.VerifyEnsureAccessCalled(category.Id, category.UserId);
     }
 
     [Fact]
@@ -31,14 +31,14 @@ public class GetByIdAsyncTests : CategoryServiceTestsBase
         var id = Guid.Empty;
         var userId = Guid.NewGuid();
 
-        SetupEnsureAccessThrowsBadRequest(id, userId);
+        AccessServiceMock.SetupEnsureAccessThrowsBadRequest(id, userId);
 
         await FluentActions
             .Awaiting(() => Service.GetByIdAsync(id, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
 
-        VerifyEnsureAccessCalled(id, userId);
+        AccessServiceMock.VerifyEnsureAccessCalled(id, userId);
     }
 
     [Fact]
@@ -47,13 +47,13 @@ public class GetByIdAsyncTests : CategoryServiceTestsBase
         var id = Guid.NewGuid();
         var userId = Guid.NewGuid();
 
-        SetupEnsureAccessThrowsNotFound(id, userId);
+        AccessServiceMock.SetupEnsureAccessThrowsNotFound(id, userId);
 
         await FluentActions
             .Awaiting(() => Service.GetByIdAsync(id, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
 
-        VerifyEnsureAccessCalled(id, userId);
+        AccessServiceMock.VerifyEnsureAccessCalled(id, userId);
     }
 }

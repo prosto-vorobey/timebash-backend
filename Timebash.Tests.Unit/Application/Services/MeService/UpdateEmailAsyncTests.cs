@@ -18,7 +18,8 @@ public class UpdateEmailAsyncTests : MeServiceTestsBase
         var request = new UserEmailUpdateRequest($"{user.Email} changed");
 
         SetupUserExistsByEmail(request.Email);
-        SetupUserEnsureAccess(user);
+        UserAccessServiceMock.SetupEnsureAccess(user);
+        UnitOfWorkMock.SetupSaveChanges();
 
         var result = await Service.UpdateEmailAsync(request, id, CancellationToken.None);
 
@@ -30,8 +31,8 @@ public class UpdateEmailAsyncTests : MeServiceTestsBase
         user.CreatedAt.Should().Be(currentCreatedTime);
 
         VerifyUserExistsByEmailCalled(request.Email);
-        VerifyEnsureAccessCalled(id);
-        VerifySaveChangesCalled();;
+        UserAccessServiceMock.VerifyEnsureAccessCalled(id);
+        UnitOfWorkMock.VerifySaveChangesCalled();;
     }
 
     [Fact]
@@ -45,7 +46,7 @@ public class UpdateEmailAsyncTests : MeServiceTestsBase
         var request = new UserEmailUpdateRequest(user.Email);
 
         SetupUserExistsByEmail(request.Email);
-        SetupUserEnsureAccess(user);
+        UserAccessServiceMock.SetupEnsureAccess(user);
 
         var result = await Service.UpdateEmailAsync(request, id, CancellationToken.None);
 
@@ -57,8 +58,7 @@ public class UpdateEmailAsyncTests : MeServiceTestsBase
         user.CreatedAt.Should().Be(currentCreatedTime);
 
         VerifyUserExistsByEmailCalled(request.Email);
-        VerifyEnsureAccessCalled(id);
-        VerifySaveChangesNotCalled();
+        UserAccessServiceMock.VerifyEnsureAccessCalled(id);
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public class UpdateEmailAsyncTests : MeServiceTestsBase
         var request = new UserEmailUpdateRequest(Faker.Internet.Email());
 
         SetupUserExistsByEmail(request.Email, true);
-        SetupUserEnsureAccess(user);
+        UserAccessServiceMock.SetupEnsureAccess(user);
 
         var exception = await FluentActions
             .Awaiting(() => Service.UpdateEmailAsync(request, user.Id, CancellationToken.None))
@@ -77,8 +77,6 @@ public class UpdateEmailAsyncTests : MeServiceTestsBase
         exception.Which.Field.Should().Be("Email");
 
         VerifyUserExistsByEmailCalled(request.Email);
-        VerifyEnsureAccessNotCalled();
-        VerifySaveChangesNotCalled();
     }
 
     [Fact]
@@ -88,7 +86,7 @@ public class UpdateEmailAsyncTests : MeServiceTestsBase
         var request = new UserEmailUpdateRequest(Faker.Internet.Email());
 
         SetupUserExistsByEmail(request.Email);
-        SetupUserEnsureAccessThrowsBadRequest(id);
+        UserAccessServiceMock.SetupEnsureAccessThrowsBadRequest(id);
 
         await FluentActions
             .Awaiting(() => Service.UpdateEmailAsync(request, id, CancellationToken.None))
@@ -96,8 +94,7 @@ public class UpdateEmailAsyncTests : MeServiceTestsBase
             .ThrowAsync<BadRequestException>();
 
         VerifyUserExistsByEmailCalled(request.Email);
-        VerifyEnsureAccessCalled(id);
-        VerifySaveChangesNotCalled();
+        UserAccessServiceMock.VerifyEnsureAccessCalled(id);
     }
 
     [Fact]
@@ -107,7 +104,7 @@ public class UpdateEmailAsyncTests : MeServiceTestsBase
         var request = new UserEmailUpdateRequest(Faker.Internet.Email());
 
         SetupUserExistsByEmail(request.Email);
-        SetupUserEnsureAccessThrowsNotFound(id);
+        UserAccessServiceMock.SetupEnsureAccessThrowsNotFound(id);
 
         await FluentActions
             .Awaiting(() => Service.UpdateEmailAsync(request, id, CancellationToken.None))
@@ -115,8 +112,7 @@ public class UpdateEmailAsyncTests : MeServiceTestsBase
             .ThrowAsync<NotFoundException>();
 
         VerifyUserExistsByEmailCalled(request.Email);
-        VerifyEnsureAccessCalled(id);
-        VerifySaveChangesNotCalled();
+        UserAccessServiceMock.VerifyEnsureAccessCalled(id);
     }
 
     private void SetupUserExistsByEmail(string email, bool exists = false)

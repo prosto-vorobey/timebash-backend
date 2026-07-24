@@ -19,7 +19,7 @@ public class GetActivitiesByCategoryIdAsyncTests : CategoryServiceTestsBase
         };
         var expected = new ActivitiesListResponse([.. activities.Select(activity => activity.ToResponse())]);
 
-        SetupValidateAccess(category.Id, category.UserId);
+        AccessServiceMock.SetupValidateAccess(category.Id, category.UserId);
         RepositoryMock
             .Setup(repository => repository.GetActivitiesByCategoryIdAsync(category.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(activities);
@@ -27,7 +27,7 @@ public class GetActivitiesByCategoryIdAsyncTests : CategoryServiceTestsBase
         var result = await Service.GetActivitiesByCategoryIdAsync(category.Id, category.UserId, CancellationToken.None);
         
         result.Should().BeEquivalentTo(expected);
-        VerifyValidateAccessCalled(category.Id, category.UserId);
+        AccessServiceMock.VerifyValidateAccessCalled(category.Id, category.UserId);
         RepositoryMock.Verify(repository => repository.GetActivitiesByCategoryIdAsync(category.Id, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -37,14 +37,14 @@ public class GetActivitiesByCategoryIdAsyncTests : CategoryServiceTestsBase
         var id = Guid.Empty;
         var userId = Guid.NewGuid();
 
-        SetupValidateAccessThrowsBadRequest(id, userId);
+        AccessServiceMock.SetupValidateAccessThrowsBadRequest(id, userId);
 
         await FluentActions
             .Awaiting(() => Service.GetActivitiesByCategoryIdAsync(id, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
 
-        VerifyValidateAccessCalled(id, userId);
+        AccessServiceMock.VerifyValidateAccessCalled(id, userId);
         VerifyGetActivitiesByCategoryIdNotCalled();
     }
 
@@ -54,14 +54,14 @@ public class GetActivitiesByCategoryIdAsyncTests : CategoryServiceTestsBase
         var id = Guid.NewGuid();
         var userId = Guid.NewGuid();
 
-        SetupValidateAccessThrowsNotFound(id, userId);
+        AccessServiceMock.SetupValidateAccessThrowsNotFound(id, userId);
 
         await FluentActions
             .Awaiting(() => Service.GetActivitiesByCategoryIdAsync(id, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
 
-        VerifyValidateAccessCalled(id, userId);
+        AccessServiceMock.VerifyValidateAccessCalled(id, userId);
         VerifyGetActivitiesByCategoryIdNotCalled();
     }
 

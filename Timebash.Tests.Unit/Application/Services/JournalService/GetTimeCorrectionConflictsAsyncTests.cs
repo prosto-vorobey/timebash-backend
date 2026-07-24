@@ -36,7 +36,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                         ]))
             ]);
 
-        SetupValidateAccess(journal.Id, journal.UserId);
+        AccessServiceMock.SetupValidateAccess(journal.Id, journal.UserId);
         SetupGetOverlappingActivities(journal.Id, truncatedStart, truncatedEnd, [overlap]);
         SetupGetPreviousActivity(journal.Id, truncatedStart, null);
         SetupGetNextActivity(journal.Id, truncatedEnd, null);
@@ -47,7 +47,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
 
         VerifyGetPreviousActivityCalled(journal.Id, truncatedStart);
         VerifyGetNextActivityCalled(journal.Id, truncatedEnd);
-        VerifyValidateAccessCalled(journal.Id, journal.UserId);
+        AccessServiceMock.VerifyValidateAccessCalled(journal.Id, journal.UserId);
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(overlap.EndTime, truncatedEnd))
             ]);
 
-        SetupValidateAccess(journal.Id, journal.UserId);
+        AccessServiceMock.SetupValidateAccess(journal.Id, journal.UserId);
         SetupGetOverlappingActivities(journal.Id, truncatedStart, truncatedEnd, [overlap]);
         SetupGetPreviousActivity(journal.Id, truncatedStart, null);
         SetupGetNextActivity(journal.Id, truncatedEnd, null);
@@ -82,7 +82,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
         
         VerifyGetPreviousActivityCalled(journal.Id, truncatedStart);
         VerifyGetNextActivityCalled(journal.Id, truncatedEnd);
-        VerifyValidateAccessCalled(journal.Id, journal.UserId);
+        AccessServiceMock.VerifyValidateAccessCalled(journal.Id, journal.UserId);
     }
 
     [Fact]
@@ -106,7 +106,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(truncatedStart, overlap.StartTime))
             ]);
 
-        SetupValidateAccess(journal.Id, journal.UserId);
+        AccessServiceMock.SetupValidateAccess(journal.Id, journal.UserId);
         SetupGetOverlappingActivities(journal.Id, truncatedStart, truncatedEnd, [overlap]);
         SetupGetPreviousActivity(journal.Id, truncatedStart, null);
         SetupGetNextActivity(journal.Id, truncatedEnd, null);
@@ -117,7 +117,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
 
         VerifyGetPreviousActivityCalled(journal.Id, truncatedStart);
         VerifyGetNextActivityCalled(journal.Id, truncatedEnd);
-        VerifyValidateAccessCalled(journal.Id, journal.UserId);
+        AccessServiceMock.VerifyValidateAccessCalled(journal.Id, journal.UserId);
     }
 
     [Fact]
@@ -141,7 +141,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(truncatedEnd, truncatedEnd))
             ]);
 
-        SetupValidateAccess(journal.Id, journal.UserId);
+        AccessServiceMock.SetupValidateAccess(journal.Id, journal.UserId);
         SetupGetOverlappingActivities(journal.Id, truncatedStart, truncatedEnd, [overlap]);
         SetupGetPreviousActivity(journal.Id, truncatedStart, null);
         SetupGetNextActivity(journal.Id, truncatedEnd, null);
@@ -152,7 +152,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
 
         VerifyGetPreviousActivityCalled(journal.Id, truncatedStart);
         VerifyGetNextActivityCalled(journal.Id, truncatedEnd);
-        VerifyValidateAccessCalled(journal.Id, journal.UserId);
+        AccessServiceMock.VerifyValidateAccessCalled(journal.Id, journal.UserId);
     }
 
     [Fact]
@@ -178,7 +178,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new DeleteCorrection())
             ]);
 
-        SetupValidateAccess(journal.Id, journal.UserId);
+        AccessServiceMock.SetupValidateAccess(journal.Id, journal.UserId);
         SetupGetOverlappingActivities(journal.Id, startTime, endTime, [overlap]);
 
         var result = await Service.GetTimeCorrectionConflictsAsync(journal.Id, startTime, endTime, journal.UserId, CancellationToken.None);
@@ -187,7 +187,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
 
         VerifyGetPreviousActivityNotCalled();
         VerifyGetNextActivityNotCalled();
-        VerifyValidateAccessCalled(journal.Id, journal.UserId);
+        AccessServiceMock.VerifyValidateAccessCalled(journal.Id, journal.UserId);
     }
 
     [Theory]
@@ -211,7 +211,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(overlap.EndTime, truncatedEnd))
             ]);
 
-        SetupValidateAccess(journal.Id, journal.UserId);
+        AccessServiceMock.SetupValidateAccess(journal.Id, journal.UserId);
         SetupGetOverlappingActivities(journal.Id, truncatedStart, truncatedEnd, [overlap]);
         SetupGetNextActivity(journal.Id, truncatedEnd, null);
 
@@ -221,7 +221,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
         
         VerifyGetNextActivityCalled(journal.Id, truncatedEnd);
         VerifyGetPreviousActivityNotCalled();
-        VerifyValidateAccessCalled(journal.Id, journal.UserId);
+        AccessServiceMock.VerifyValidateAccessCalled(journal.Id, journal.UserId);
     }
 
     [Theory]
@@ -245,7 +245,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(truncatedStart, overlap.StartTime))
             ]);
 
-        SetupValidateAccess(journal.Id, journal.UserId);
+        AccessServiceMock.SetupValidateAccess(journal.Id, journal.UserId);
         SetupGetOverlappingActivities(journal.Id, truncatedStart, truncatedEnd, [overlap]);
         SetupGetPreviousActivity(journal.Id, truncatedStart, null);
 
@@ -255,7 +255,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
 
         VerifyGetPreviousActivityCalled(journal.Id, truncatedStart);
         VerifyGetNextActivityNotCalled();
-        VerifyValidateAccessCalled(journal.Id, journal.UserId);
+        AccessServiceMock.VerifyValidateAccessCalled(journal.Id, journal.UserId);
     }
 
     [Fact]
@@ -314,7 +314,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(truncatedStart, overlaps[3].StartTime)),
             ]);
 
-        SetupValidateAccess(journal.Id, journal.UserId);
+        AccessServiceMock.SetupValidateAccess(journal.Id, journal.UserId);
         SetupGetOverlappingActivities(journal.Id, truncatedStart, truncatedEnd, overlaps);
         SetupGetNextActivity(journal.Id, truncatedEnd, null);
 
@@ -324,7 +324,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
 
         VerifyGetNextActivityCalled(journal.Id, truncatedEnd);
         VerifyGetPreviousActivityNotCalled();
-        VerifyValidateAccessCalled(journal.Id, journal.UserId);
+        AccessServiceMock.VerifyValidateAccessCalled(journal.Id, journal.UserId);
     }
 
     [Fact]
@@ -399,7 +399,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(truncatedStart, next.StartTime))
             ]);
 
-        SetupValidateAccess(journal.Id, journal.UserId);
+        AccessServiceMock.SetupValidateAccess(journal.Id, journal.UserId);
         SetupGetOverlappingActivities(journal.Id, truncatedStart, truncatedEnd, overlaps);
         SetupGetPreviousActivity(journal.Id, truncatedStart, previous);
         SetupGetNextActivity(journal.Id, truncatedEnd, next);
@@ -410,7 +410,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
 
         VerifyGetPreviousActivityCalled(journal.Id, truncatedStart);
         VerifyGetNextActivityCalled(journal.Id, truncatedEnd);
-        VerifyValidateAccessCalled(journal.Id, journal.UserId);
+        AccessServiceMock.VerifyValidateAccessCalled(journal.Id, journal.UserId);
     }
 
     [Fact]
@@ -434,7 +434,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(previous.EndTime, truncatedEnd)),
             ]);
 
-        SetupValidateAccess(journal.Id, journal.UserId);
+        AccessServiceMock.SetupValidateAccess(journal.Id, journal.UserId);
         SetupGetOverlappingActivities(journal.Id, truncatedStart, truncatedEnd, []);
         SetupGetPreviousActivity(journal.Id, truncatedStart, previous);
         SetupGetNextActivity(journal.Id, truncatedEnd, null);
@@ -445,7 +445,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
 
         VerifyGetPreviousActivityCalled(journal.Id, truncatedStart);
         VerifyGetNextActivityCalled(journal.Id, truncatedEnd);
-        VerifyValidateAccessCalled(journal.Id, journal.UserId);
+        AccessServiceMock.VerifyValidateAccessCalled(journal.Id, journal.UserId);
     }
 
     [Fact]
@@ -458,7 +458,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
         var truncatedEnd = endTime.TruncateToSecond();
         var previous = new Activity(Guid.NewGuid(), journal.Id, DateTime.MinValue, startTime, Faker.Lorem.Sentence());
 
-        SetupValidateAccess(journal.Id, journal.UserId);
+        AccessServiceMock.SetupValidateAccess(journal.Id, journal.UserId);
         SetupGetOverlappingActivities(journal.Id, truncatedStart, truncatedEnd, []);
         SetupGetPreviousActivity(journal.Id, truncatedStart, previous);
         SetupGetNextActivity(journal.Id, truncatedEnd, null);
@@ -469,7 +469,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
 
         VerifyGetPreviousActivityCalled(journal.Id, truncatedStart);
         VerifyGetNextActivityCalled(journal.Id, truncatedEnd);
-        VerifyValidateAccessCalled(journal.Id, journal.UserId);
+        AccessServiceMock.VerifyValidateAccessCalled(journal.Id, journal.UserId);
     }
 
     [Fact]
@@ -493,7 +493,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(truncatedStart, next.StartTime))
             ]);
 
-        SetupValidateAccess(journal.Id, journal.UserId);
+        AccessServiceMock.SetupValidateAccess(journal.Id, journal.UserId);
         SetupGetOverlappingActivities(journal.Id, truncatedStart, truncatedEnd, []);
         SetupGetPreviousActivity(journal.Id, truncatedStart, null);
         SetupGetNextActivity(journal.Id, truncatedEnd, next);
@@ -504,7 +504,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
 
         VerifyGetPreviousActivityCalled(journal.Id, truncatedStart);
         VerifyGetNextActivityCalled(journal.Id, truncatedEnd);
-        VerifyValidateAccessCalled(journal.Id, journal.UserId);
+        AccessServiceMock.VerifyValidateAccessCalled(journal.Id, journal.UserId);
     }
 
     [Fact]
@@ -517,7 +517,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
         var truncatedEnd = endTime.TruncateToSecond();
         var next = new Activity(Guid.NewGuid(), journal.Id, endTime, DateTime.MaxValue, Faker.Lorem.Sentence());
 
-        SetupValidateAccess(journal.Id, journal.UserId);
+        AccessServiceMock.SetupValidateAccess(journal.Id, journal.UserId);
         SetupGetOverlappingActivities(journal.Id, truncatedStart, truncatedEnd, []);
         SetupGetPreviousActivity(journal.Id, truncatedStart, null);
         SetupGetNextActivity(journal.Id, truncatedEnd, next);
@@ -528,7 +528,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
 
         VerifyGetPreviousActivityCalled(journal.Id, truncatedStart);
         VerifyGetNextActivityCalled(journal.Id, truncatedEnd);
-        VerifyValidateAccessCalled(journal.Id, journal.UserId);
+        AccessServiceMock.VerifyValidateAccessCalled(journal.Id, journal.UserId);
     }
 
     [Fact]
@@ -560,7 +560,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
                     new ShiftCorrection(truncatedStart, next.StartTime))
             ]);
 
-        SetupValidateAccess(journal.Id, journal.UserId);
+        AccessServiceMock.SetupValidateAccess(journal.Id, journal.UserId);
         SetupGetOverlappingActivities(journal.Id, truncatedStart, truncatedEnd, []);
         SetupGetPreviousActivity(journal.Id, truncatedStart, previous);
         SetupGetNextActivity(journal.Id, truncatedEnd, next);
@@ -571,7 +571,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
 
         VerifyGetPreviousActivityCalled(journal.Id, truncatedStart);
         VerifyGetNextActivityCalled(journal.Id, truncatedEnd);
-        VerifyValidateAccessCalled(journal.Id, journal.UserId);
+        AccessServiceMock.VerifyValidateAccessCalled(journal.Id, journal.UserId);
     }
 
     [Fact]
@@ -583,7 +583,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
         var truncatedStart = startTime.TruncateToSecond();
         var truncatedEnd = endTime.TruncateToSecond();
 
-        SetupValidateAccess(journal.Id, journal.UserId);
+        AccessServiceMock.SetupValidateAccess(journal.Id, journal.UserId);
         SetupGetOverlappingActivities(journal.Id, truncatedStart, truncatedEnd, []);
         SetupGetPreviousActivity(journal.Id, truncatedStart, null);
         SetupGetNextActivity(journal.Id, truncatedEnd, null);
@@ -594,7 +594,7 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
 
         VerifyGetPreviousActivityCalled(journal.Id, truncatedStart);
         VerifyGetNextActivityCalled(journal.Id, truncatedEnd);
-        VerifyValidateAccessCalled(journal.Id, journal.UserId);
+        AccessServiceMock.VerifyValidateAccessCalled(journal.Id, journal.UserId);
     }
 
     [Fact]
@@ -603,14 +603,14 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
         var id = Guid.Empty;
         var userId = Guid.NewGuid();
 
-        SetupValidateAccessThrowsBadRequest(id, userId);
+        AccessServiceMock.SetupValidateAccessThrowsBadRequest(id, userId);
 
         await FluentActions
             .Awaiting(() => Service.GetTimeCorrectionConflictsAsync(id, DateTime.MinValue, DateTime.MaxValue, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
 
-        VerifyValidateAccessCalled(id, userId);
+        AccessServiceMock.VerifyValidateAccessCalled(id, userId);
         VerifyGetOverlappingActivitiesNotCalled();
         VerifyGetPreviousActivityNotCalled();
         VerifyGetNextActivityNotCalled();
@@ -623,14 +623,14 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
         var userId = Guid.NewGuid();
         JournalRepositoryMock.Setup(repository => repository.IsUserLinkedAsync(id, userId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
-        SetupValidateAccessThrowsNotFound(id, userId);
+        AccessServiceMock.SetupValidateAccessThrowsNotFound(id, userId);
 
         await FluentActions
             .Awaiting(() => Service.GetTimeCorrectionConflictsAsync(id, DateTime.MinValue, DateTime.MaxValue, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
 
-        VerifyValidateAccessCalled(id, userId);
+        AccessServiceMock.VerifyValidateAccessCalled(id, userId);
         VerifyGetOverlappingActivitiesNotCalled();
         VerifyGetPreviousActivityNotCalled();
         VerifyGetNextActivityNotCalled();

@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Moq;
 using Timebash.Application.Extensions;
 using Timebash.Core.Entities;
 using Timebash.Core.Exceptions;
@@ -14,12 +13,12 @@ public class GetByIdAsyncTests : JournalServiceTestsBase
         var journal = new Journal(Guid.NewGuid(), Guid.NewGuid(), Faker.Lorem.Word());
         var expected = journal.ToResponse();
 
-        SetupEnsureAccess(journal);
+        AccessServiceMock.SetupEnsureAccess(journal);
 
         var result = await Service.GetByIdAsync(journal.Id, journal.UserId, CancellationToken.None);
         
         result.Should().BeEquivalentTo(expected);
-        VerifyEnsureAccessCalled(journal.Id, journal.UserId);
+        AccessServiceMock.VerifyEnsureAccessCalled(journal.Id, journal.UserId);
     }
 
     [Fact]
@@ -28,14 +27,14 @@ public class GetByIdAsyncTests : JournalServiceTestsBase
         var id = Guid.Empty;
         var userId = Guid.NewGuid();
 
-        SetupEnsureAccessThrowsBadRequest(id, userId);
+        AccessServiceMock.SetupEnsureAccessThrowsBadRequest(id, userId);
 
         await FluentActions
             .Awaiting(() => Service.GetByIdAsync(id, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
 
-        VerifyEnsureAccessCalled(id, userId);
+        AccessServiceMock.VerifyEnsureAccessCalled(id, userId);
     }
 
     [Fact]
@@ -44,13 +43,13 @@ public class GetByIdAsyncTests : JournalServiceTestsBase
         var id = Guid.NewGuid();
         var userId = Guid.NewGuid();
 
-        SetupEnsureAccessThrowsNotFound(id, userId);
+        AccessServiceMock.SetupEnsureAccessThrowsNotFound(id, userId);
 
         await FluentActions
             .Awaiting(() => Service.GetByIdAsync(id, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
 
-        VerifyEnsureAccessCalled(id, userId);
+        AccessServiceMock.VerifyEnsureAccessCalled(id, userId);
     }
 }

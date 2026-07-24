@@ -11,13 +11,16 @@ public class DeleteAsyncTests : CategoryServiceTestsBase
     public async Task Delete_ValidAccess_ShouldDeleteCategory()
     {
         var category = new Category(Guid.NewGuid(), Guid.NewGuid(), Faker.Lorem.Word(), "#000000");
-        SetupEnsureAccess(category);
+
+        AccessServiceMock.SetupEnsureAccess(category);
+        RepositoryMock.Setup(repository => repository.Delete(category));
+        UnitOfWorkMock.SetupSaveChanges();
 
         await Service.DeleteAsync(category.Id, category.UserId, CancellationToken.None);
 
-        VerifyEnsureAccessCalled(category.Id, category.UserId);
+        AccessServiceMock.VerifyEnsureAccessCalled(category.Id, category.UserId);
         RepositoryMock.Verify(repository => repository.Delete(category), Times.Once);
-        VerifySaveChangesCalled();
+        UnitOfWorkMock.VerifySaveChangesCalled();
     }
 
     [Fact]
@@ -26,16 +29,14 @@ public class DeleteAsyncTests : CategoryServiceTestsBase
         var id = Guid.Empty;
         var userId = Guid.NewGuid();
 
-        SetupEnsureAccessThrowsBadRequest(id, userId);
+        AccessServiceMock.SetupEnsureAccessThrowsBadRequest(id, userId);
 
         await FluentActions
             .Awaiting(() => Service.DeleteAsync(id, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
 
-        VerifyEnsureAccessCalled(id, userId);
-        VerifyDeleteNotCalled();
-        VerifySaveChangesNotCalled();
+        AccessServiceMock.VerifyEnsureAccessCalled(id, userId);
     }
 
     [Fact]
@@ -44,18 +45,13 @@ public class DeleteAsyncTests : CategoryServiceTestsBase
         var id = Guid.NewGuid();
         var userId = Guid.NewGuid();
 
-        SetupEnsureAccessThrowsNotFound(id, userId);
+        AccessServiceMock.SetupEnsureAccessThrowsNotFound(id, userId);
 
         await FluentActions
             .Awaiting(() => Service.DeleteAsync(id, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
 
-        VerifyEnsureAccessCalled(id, userId);
-        VerifyDeleteNotCalled();
-        VerifySaveChangesNotCalled();
+        AccessServiceMock.VerifyEnsureAccessCalled(id, userId);
     }
-
-    private void VerifyDeleteNotCalled()
-        => RepositoryMock.Verify(repository => repository.Delete(It.IsAny<Category>()), Times.Never);
 }

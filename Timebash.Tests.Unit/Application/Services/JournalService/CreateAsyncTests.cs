@@ -17,6 +17,7 @@ public class CreateAsyncTests : JournalServiceTestsBase
 
         var capturedJournals = new List<Journal>();
         JournalRepositoryMock.Setup(repository => repository.Add(It.IsAny<Journal>())).Callback(capturedJournals.Add);
+        UnitOfWorkMock.SetupSaveChanges();
 
         var result = await Service.CreateAsync(request, userId, CancellationToken.None);
 
@@ -31,6 +32,6 @@ public class CreateAsyncTests : JournalServiceTestsBase
                 .Excluding(journal => journal.UpdatedAt));
 
         result.Should().BeEquivalentTo(capturedJournal.ToResponse());
-        VerifySaveChangesCalled();
+        UnitOfWorkMock.VerifySaveChangesCalled();
     }
 }

@@ -20,9 +20,10 @@ public class UpdatePasswordAsyncTests : MeServiceTestsBase
         var newPasswordHash = Faker.Random.Hash();
         var request = new PasswordUpdateRequest(currentPassword, Faker.Internet.Password());
 
-        SetupUserEnsureAccess(user);
+        UserAccessServiceMock.SetupEnsureAccess(user);
         SetupVerifyPassword(user, request.CurrentPassword);
         PasswordServiceMock.Setup(service => service.HashPassword(user, request.NewPassword)).Returns(newPasswordHash);
+        UnitOfWorkMock.SetupSaveChanges();
 
         var result = await Service.UpdatePasswordAsync(request, id, CancellationToken.None);
 
@@ -33,10 +34,10 @@ public class UpdatePasswordAsyncTests : MeServiceTestsBase
         user.Email.Should().Be(email);
         user.CreatedAt.Should().Be(currentCreatedTime);
 
-        VerifyEnsureAccessCalled(id);
+        UserAccessServiceMock.VerifyEnsureAccessCalled(id);
         VerifyVerifyPasswordCalled(user, request.CurrentPassword);
         VerifyHashPasswordCalled(user, request.NewPassword);
-        VerifySaveChangesCalled();
+        UnitOfWorkMock.VerifySaveChangesCalled();
     }
 
     [Fact]
@@ -55,7 +56,7 @@ public class UpdatePasswordAsyncTests : MeServiceTestsBase
         var currentCreatedTime = user.CreatedAt;
         var request = new PasswordUpdateRequest(currentPassword, currentPassword);
 
-        SetupUserEnsureAccess(user);
+        UserAccessServiceMock.SetupEnsureAccess(user);
         SetupVerifyPassword(user, request.CurrentPassword);
 
         var result = await Service.UpdatePasswordAsync(request, id, CancellationToken.None);
@@ -67,17 +68,15 @@ public class UpdatePasswordAsyncTests : MeServiceTestsBase
         user.PasswordHash.Should().Be(currentPasswordHash);
         user.CreatedAt.Should().Be(currentCreatedTime);
 
-        VerifyEnsureAccessCalled(id);
+        UserAccessServiceMock.VerifyEnsureAccessCalled(id);
         VerifyVerifyPasswordCalled(user, request.CurrentPassword);
-        VerifyHashPasswordNotCalled();
-        VerifySaveChangesNotCalled();
     }
 
     [Fact]
     public async Task UpdatePassword_EmptyId_ShouldThrowBadRequest()
     {
         var id = Guid.Empty;
-        SetupUserEnsureAccessThrowsBadRequest(id);
+        UserAccessServiceMock.SetupEnsureAccessThrowsBadRequest(id);
 
         await FluentActions
             .Awaiting(() => Service.UpdatePasswordAsync(
@@ -87,10 +86,7 @@ public class UpdatePasswordAsyncTests : MeServiceTestsBase
             .Should()
             .ThrowAsync<BadRequestException>();
 
-        VerifyEnsureAccessCalled(id);
-        VerifyVerifyPasswordNotCalled();
-        VerifyHashPasswordNotCalled();
-        VerifySaveChangesNotCalled();
+        UserAccessServiceMock.VerifyEnsureAccessCalled(id);
     }
 
     [Fact]
@@ -99,17 +95,14 @@ public class UpdatePasswordAsyncTests : MeServiceTestsBase
         var id = Guid.NewGuid();
         var request = new PasswordUpdateRequest(Faker.Internet.Password(), Faker.Internet.Password());
 
-        SetupUserEnsureAccessThrowsNotFound(id);
+        UserAccessServiceMock.SetupEnsureAccessThrowsNotFound(id);
 
         await FluentActions
             .Awaiting(() => Service.UpdatePasswordAsync(request, id, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
 
-        VerifyEnsureAccessCalled(id);
-        VerifyVerifyPasswordNotCalled();
-        VerifyHashPasswordNotCalled();
-        VerifySaveChangesNotCalled();
+        UserAccessServiceMock.VerifyEnsureAccessCalled(id);
     }
 
     [Fact]
@@ -118,7 +111,7 @@ public class UpdatePasswordAsyncTests : MeServiceTestsBase
         var user = new User(Guid.NewGuid(), Faker.Internet.UserName(), Faker.Internet.Email());
         var request = new PasswordUpdateRequest(Faker.Internet.Password(), Faker.Internet.Password());
 
-        SetupUserEnsureAccess(user);
+        UserAccessServiceMock.SetupEnsureAccess(user);
         SetupVerifyPassword(user, request.CurrentPassword, false);
 
         await FluentActions
@@ -126,10 +119,8 @@ public class UpdatePasswordAsyncTests : MeServiceTestsBase
             .Should()
             .ThrowAsync<UnauthorizedException>();
 
-        VerifyEnsureAccessCalled(user.Id);
+        UserAccessServiceMock.VerifyEnsureAccessCalled(user.Id);
         VerifyVerifyPasswordCalled(user, request.CurrentPassword);
-        VerifyHashPasswordNotCalled();
-        VerifySaveChangesNotCalled();
     }
 
     private void SetupVerifyPassword(User user, string currentPassword, bool isValid = true)
@@ -138,12 +129,6 @@ public class UpdatePasswordAsyncTests : MeServiceTestsBase
     private void VerifyVerifyPasswordCalled(User user, string currentPassword)
         => PasswordServiceMock.Verify(service => service.VerifyPassword(user, currentPassword), Times.Once);
 
-    private void VerifyVerifyPasswordNotCalled()
-        => PasswordServiceMock.Verify(service => service.VerifyPassword(It.IsAny<User>(), It.IsAny<string>()), Times.Never);
-
     private void VerifyHashPasswordCalled(User user, string newPassword)
         => PasswordServiceMock.Verify(service => service.HashPassword(user, newPassword), Times.Once);
-
-    private void VerifyHashPasswordNotCalled()
-        => PasswordServiceMock.Verify(service => service.HashPassword(It.IsAny<User>(), It.IsAny<string>()), Times.Never);
 }

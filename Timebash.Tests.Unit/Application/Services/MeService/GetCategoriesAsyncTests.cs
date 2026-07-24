@@ -19,13 +19,13 @@ public class GetCategoriesAsyncTests : MeServiceTestsBase
         };
         var expected = new CategoriesListResponse([.. categories.Select(category => category.ToResponse())]);
 
-        SetupUserValidateExists(userId);
+        UserAccessServiceMock.SetupValidateExists(userId);
         CategoryRepositoryMock.Setup(repository => repository.GetByUserIdAsync(userId, It.IsAny<CancellationToken>())).ReturnsAsync(categories);
 
         var result = await Service.GetCategoriesAsync(userId, CancellationToken.None);
 
         result.Should().BeEquivalentTo(expected);
-        VerifyValidateExistsCalled(userId);
+        UserAccessServiceMock.VerifyValidateExistsCalled(userId);
         CategoryRepositoryMock.Verify(repository => repository.GetByUserIdAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -33,32 +33,27 @@ public class GetCategoriesAsyncTests : MeServiceTestsBase
     public async Task GetCategories_EmptyId_ShouldThrowBadRequest()
     {
         var id = Guid.Empty;
-        SetupUserValidateExistsThrowsBadRequest(id);
+        UserAccessServiceMock.SetupValidateExistsThrowsBadRequest(id);
 
         await FluentActions
             .Awaiting(() => Service.GetCategoriesAsync(id, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
 
-        VerifyValidateExistsCalled(id);
-        VerifyGetCategoriesByUserIdNotCalled();
+        UserAccessServiceMock.VerifyValidateExistsCalled(id);
     }
 
     [Fact]
     public async Task GetCategories_UserNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        SetupUserValidateExistsThrowsNotFound(id);
+        UserAccessServiceMock.SetupValidateExistsThrowsNotFound(id);
 
         await FluentActions
             .Awaiting(() => Service.GetCategoriesAsync(id, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
 
-        VerifyValidateExistsCalled(id);
-        VerifyGetCategoriesByUserIdNotCalled();
+        UserAccessServiceMock.VerifyValidateExistsCalled(id);
     }
-
-    private void VerifyGetCategoriesByUserIdNotCalled()
-        => CategoryRepositoryMock.Verify(repository => repository.GetByUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
 }

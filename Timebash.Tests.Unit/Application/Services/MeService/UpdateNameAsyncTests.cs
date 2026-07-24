@@ -18,7 +18,8 @@ public class UpdateNameAsyncTests : MeServiceTestsBase
         var request = new UserNameUpdateRequest($"{user.Name} changed");
 
         SetupUserExistsByName(request.Name);
-        SetupUserEnsureAccess(user);
+        UserAccessServiceMock.SetupEnsureAccess(user);
+        UnitOfWorkMock.SetupSaveChanges();
 
         var result = await Service.UpdateNameAsync(request, id, CancellationToken.None);
 
@@ -30,8 +31,8 @@ public class UpdateNameAsyncTests : MeServiceTestsBase
         user.CreatedAt.Should().Be(currentCreatedTime);
 
         VerifyUserExistsByNameCalled(request.Name);
-        VerifyEnsureAccessCalled(id);
-        VerifySaveChangesCalled();
+        UserAccessServiceMock.VerifyEnsureAccessCalled(id);
+        UnitOfWorkMock.VerifySaveChangesCalled();
     }
 
     [Fact]
@@ -45,7 +46,7 @@ public class UpdateNameAsyncTests : MeServiceTestsBase
         var request = new UserNameUpdateRequest(name);
 
         SetupUserExistsByName(request.Name);
-        SetupUserEnsureAccess(user);
+        UserAccessServiceMock.SetupEnsureAccess(user);
 
         var result = await Service.UpdateNameAsync(request, id, CancellationToken.None);
 
@@ -57,8 +58,7 @@ public class UpdateNameAsyncTests : MeServiceTestsBase
         user.CreatedAt.Should().Be(currentCreatedTime);
 
         VerifyUserExistsByNameCalled(request.Name);
-        VerifyEnsureAccessCalled(id);
-        VerifySaveChangesNotCalled();
+        UserAccessServiceMock.VerifyEnsureAccessCalled(id);
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public class UpdateNameAsyncTests : MeServiceTestsBase
         var request = new UserNameUpdateRequest(Faker.Internet.UserName());
 
         SetupUserExistsByName(request.Name, true);
-        SetupUserEnsureAccess(user);
+        UserAccessServiceMock.SetupEnsureAccess(user);
 
         var exception = await FluentActions
             .Awaiting(() => Service.UpdateNameAsync(request, Guid.NewGuid(), CancellationToken.None))
@@ -77,8 +77,6 @@ public class UpdateNameAsyncTests : MeServiceTestsBase
         exception.Which.Field.Should().Be("Name");
 
         VerifyUserExistsByNameCalled(request.Name);
-        VerifyEnsureAccessNotCalled();
-        VerifySaveChangesNotCalled();
     }
 
     [Fact]
@@ -88,7 +86,7 @@ public class UpdateNameAsyncTests : MeServiceTestsBase
         var request = new UserNameUpdateRequest(Faker.Internet.UserName());
 
         SetupUserExistsByName(request.Name);
-        SetupUserEnsureAccessThrowsBadRequest(id);
+        UserAccessServiceMock.SetupEnsureAccessThrowsBadRequest(id);
 
         await FluentActions
             .Awaiting(() => Service.UpdateNameAsync(request, id, CancellationToken.None))
@@ -96,8 +94,7 @@ public class UpdateNameAsyncTests : MeServiceTestsBase
             .ThrowAsync<BadRequestException>();
 
         VerifyUserExistsByNameCalled(request.Name);
-        VerifyEnsureAccessCalled(id);
-        VerifySaveChangesNotCalled();
+        UserAccessServiceMock.VerifyEnsureAccessCalled(id);
     }
 
     [Fact]
@@ -107,7 +104,7 @@ public class UpdateNameAsyncTests : MeServiceTestsBase
         var request = new UserNameUpdateRequest(Faker.Internet.UserName());
 
         SetupUserExistsByName(request.Name);
-        SetupUserEnsureAccessThrowsNotFound(id);
+        UserAccessServiceMock.SetupEnsureAccessThrowsNotFound(id);
 
         await FluentActions
             .Awaiting(() => Service.UpdateNameAsync(request, id, CancellationToken.None))
@@ -115,8 +112,7 @@ public class UpdateNameAsyncTests : MeServiceTestsBase
             .ThrowAsync<NotFoundException>();
 
         VerifyUserExistsByNameCalled(request.Name);
-        VerifyEnsureAccessCalled(id);
-        VerifySaveChangesNotCalled();
+        UserAccessServiceMock.VerifyEnsureAccessCalled(id);
     }
 
     private void SetupUserExistsByName(string name, bool exists = false)

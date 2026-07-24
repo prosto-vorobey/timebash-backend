@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Moq;
 using Timebash.Application.Extensions;
 using Timebash.Core.DTOs.Requests;
 using Timebash.Core.Entities;
@@ -25,7 +24,8 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
         };
         expected.ApplyUpdate(request);
 
-        SetupEnsureAccess(category);
+        AccessServiceMock.SetupEnsureAccess(category);
+        UnitOfWorkMock.SetupSaveChanges();
 
         var result = await Service.UpdateAsync(category.Id, request, category.UserId, CancellationToken.None);
 
@@ -37,8 +37,8 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
                 .Excluding(category => category.UpdatedAt)
                 .Excluding(category => category.CreatedAt));
 
-        VerifyEnsureAccessCalled(category.Id, category.UserId);
-        VerifySaveChangesCalled();
+        AccessServiceMock.VerifyEnsureAccessCalled(category.Id, category.UserId);
+        UnitOfWorkMock.VerifySaveChangesCalled();
     }
 
     [Fact]
@@ -56,7 +56,7 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
             Keywords = category.Keywords
         };
 
-        SetupEnsureAccess(category);
+        AccessServiceMock.SetupEnsureAccess(category);
 
         var result = await Service.UpdateAsync(category.Id, request, category.UserId, CancellationToken.None);
 
@@ -68,8 +68,7 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
                 .Excluding(category => category.UpdatedAt)
                 .Excluding(category => category.CreatedAt));
 
-        VerifyEnsureAccessCalled(category.Id, category.UserId);
-        VerifySaveChangesNotCalled();
+        AccessServiceMock.VerifyEnsureAccessCalled(category.Id, category.UserId);
     }
 
     [Fact]
@@ -87,7 +86,7 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
             Keywords = [.. category.Keywords.Shuffle()]
         };
 
-        SetupEnsureAccess(category);
+        AccessServiceMock.SetupEnsureAccess(category);
 
         var result = await Service.UpdateAsync(category.Id, request, category.UserId, CancellationToken.None);
 
@@ -99,8 +98,7 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
                 .Excluding(category => category.UpdatedAt)
                 .Excluding(category => category.CreatedAt));
 
-        VerifyEnsureAccessCalled(category.Id, category.UserId);
-        VerifySaveChangesNotCalled();
+        AccessServiceMock.VerifyEnsureAccessCalled(category.Id, category.UserId);
     }
 
     [Fact]
@@ -109,15 +107,14 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
         var id = Guid.Empty;
         var userId = Guid.NewGuid();
 
-        SetupEnsureAccessThrowsBadRequest(id, userId);
+        AccessServiceMock.SetupEnsureAccessThrowsBadRequest(id, userId);
 
         await FluentActions
             .Awaiting(() => Service.UpdateAsync(id, new CategoryRequest(Faker.Lorem.Word(), "#000000", []), userId, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
 
-        VerifyEnsureAccessCalled(id, userId);
-        VerifySaveChangesNotCalled();
+        AccessServiceMock.VerifyEnsureAccessCalled(id, userId);
     }
 
     [Fact]
@@ -126,14 +123,13 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
         var id = Guid.NewGuid();
         var userId = Guid.NewGuid();
 
-        SetupEnsureAccessThrowsNotFound(id, userId);
+        AccessServiceMock.SetupEnsureAccessThrowsNotFound(id, userId);
 
         await FluentActions
             .Awaiting(() => Service.UpdateAsync(id, new CategoryRequest(Faker.Lorem.Word(), "#000000", []), userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
 
-        VerifyEnsureAccessCalled(id, userId);
-        VerifySaveChangesNotCalled();
+        AccessServiceMock.VerifyEnsureAccessCalled(id, userId);
     }
 }

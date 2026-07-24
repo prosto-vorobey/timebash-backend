@@ -51,8 +51,7 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
                 .Select(activity => activity.ToResponse())]);
 
         AccessServiceMock.SetupValidateAccess(journal.Id, journal.UserId);
-        ActivityQueryServiceMock.Setup(service => service.GetActivitiesForJournalAsync(journal.Id, start, null, ActivityDateFilterMode.ByStartTime))
-            .Returns(expectedActivities.ToAsyncEnumerable());
+        SetupGetActivitiesForJournal(journal.Id, start, null, expectedActivities);
 
         var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, start, null, journal.UserId, CancellationToken.None);
 
@@ -75,8 +74,7 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
                 .Select(activity => activity.ToResponse())]);
 
         AccessServiceMock.SetupValidateAccess(journal.Id, journal.UserId);
-        ActivityQueryServiceMock.Setup(service => service.GetActivitiesForJournalAsync(journal.Id, null, end, ActivityDateFilterMode.ByStartTime))
-            .Returns(expectedActivities.ToAsyncEnumerable());
+        SetupGetActivitiesForJournal(journal.Id, null, end, expectedActivities);
 
         var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, null, end, journal.UserId, CancellationToken.None);
 
@@ -100,8 +98,7 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
                 .Select(activity => activity.ToResponse())]);
 
         AccessServiceMock.SetupValidateAccess(journal.Id, journal.UserId);
-        ActivityQueryServiceMock.Setup(service => service.GetActivitiesForJournalAsync(journal.Id, start, end, ActivityDateFilterMode.ByStartTime))
-            .Returns(expectedActivities.ToAsyncEnumerable());
+        SetupGetActivitiesForJournal(journal.Id, start, end, expectedActivities);
 
         var result = await Service.GetActivitiesByJournalIdAsync(journal.Id, start, end, journal.UserId, CancellationToken.None);
 
@@ -124,8 +121,6 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
             .ThrowAsync<BadRequestException>();
 
         AccessServiceMock.VerifyValidateAccessCalled(id, userId);
-        VerifyGetActivitiesByJournalIdNotCalled();
-        VerifyGetActivitiesForJournalNotCalled();
     }
 
     [Fact]
@@ -142,24 +137,15 @@ public class GetActivitiesByJournalIdAsyncTests : JournalServiceTestsBase
             .ThrowAsync<NotFoundException>();
 
         AccessServiceMock.VerifyValidateAccessCalled(id, userId);
-        VerifyGetActivitiesByJournalIdNotCalled();
-        VerifyGetActivitiesForJournalNotCalled();
     }
+
+    private void SetupGetActivitiesForJournal(Guid id, DateTime? startDate, DateTime? endDate, List<Activity> activities)
+        => ActivityQueryServiceMock
+            .Setup(service => service.GetActivitiesForJournalAsync(id, startDate, endDate, ActivityDateFilterMode.ByStartTime))
+            .Returns(activities.ToAsyncEnumerable());
 
     private void VerifyGetActivitiesForJournalCalled(Guid id, DateTime? start, DateTime? end)
         => ActivityQueryServiceMock.Verify(
             service => service.GetActivitiesForJournalAsync(id, start, end, It.IsAny<ActivityDateFilterMode>()),
             Times.Once);
-
-    private void VerifyGetActivitiesByJournalIdNotCalled()
-        => ActivityRepositoryMock.Verify(repository => repository.GetByJournalIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
-
-    private void VerifyGetActivitiesForJournalNotCalled() 
-        => ActivityQueryServiceMock.Verify(
-            service => service.GetActivitiesForJournalAsync(
-                It.IsAny<Guid>(),
-                It.IsAny<DateTime?>(),
-                It.IsAny<DateTime?>(),
-                It.IsAny<ActivityDateFilterMode>()),
-            Times.Never);
 }

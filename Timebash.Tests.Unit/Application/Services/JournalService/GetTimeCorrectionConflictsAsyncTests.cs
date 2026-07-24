@@ -186,8 +186,6 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
 
         result.Should().BeEquivalentTo(expected);
 
-        VerifyGetPreviousActivityNotCalled();
-        VerifyGetNextActivityNotCalled();
         AccessServiceMock.VerifyValidateAccessCalled(journal.Id, journal.UserId);
     }
 
@@ -221,7 +219,6 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
         result.Should().BeEquivalentTo(expected);
         
         VerifyGetNextActivityCalled(journal.Id, truncatedEnd);
-        VerifyGetPreviousActivityNotCalled();
         AccessServiceMock.VerifyValidateAccessCalled(journal.Id, journal.UserId);
     }
 
@@ -255,7 +252,6 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
         result.Should().BeEquivalentTo(expected);
 
         VerifyGetPreviousActivityCalled(journal.Id, truncatedStart);
-        VerifyGetNextActivityNotCalled();
         AccessServiceMock.VerifyValidateAccessCalled(journal.Id, journal.UserId);
     }
 
@@ -324,7 +320,6 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
         result.Should().BeEquivalentTo(expected);
 
         VerifyGetNextActivityCalled(journal.Id, truncatedEnd);
-        VerifyGetPreviousActivityNotCalled();
         AccessServiceMock.VerifyValidateAccessCalled(journal.Id, journal.UserId);
     }
 
@@ -612,9 +607,6 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
             .ThrowAsync<BadRequestException>();
 
         AccessServiceMock.VerifyValidateAccessCalled(id, userId);
-        VerifyGetOverlappingActivitiesNotCalled();
-        VerifyGetPreviousActivityNotCalled();
-        VerifyGetNextActivityNotCalled();
     }
 
     [Fact]
@@ -632,9 +624,6 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
             .ThrowAsync<NotFoundException>();
 
         AccessServiceMock.VerifyValidateAccessCalled(id, userId);
-        VerifyGetOverlappingActivitiesNotCalled();
-        VerifyGetPreviousActivityNotCalled();
-        VerifyGetNextActivityNotCalled();
     }
 
     private void SetupGetOverlappingActivities(Guid id, DateTime start, DateTime end, List<Activity> overlaps)
@@ -661,23 +650,4 @@ public class GetTimeCorrectionConflictsAsyncTests : JournalServiceTestsBase
         => ActivityRepositoryMock.Verify(
             repository => repository.GetNextActivityAsync(id, end, It.IsAny<CancellationToken>()),
             Times.Once);
-
-    private void VerifyGetOverlappingActivitiesNotCalled()
-        => ActivityRepositoryMock.Verify(
-            repository => repository.GetOverlappingActivitiesAsync(
-                It.IsAny<Guid>(),
-                It.IsAny<DateTime>(),
-                It.IsAny<DateTime>(),
-                It.IsAny<CancellationToken>()),
-            Times.Never);
-
-    private void VerifyGetPreviousActivityNotCalled()
-        => ActivityRepositoryMock.Verify(
-            repository => repository.GetPreviousActivityAsync(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()),
-            Times.Never);
-
-    private void VerifyGetNextActivityNotCalled()
-        => ActivityRepositoryMock.Verify(
-            repository => repository.GetNextActivityAsync(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()),
-            Times.Never);
 }

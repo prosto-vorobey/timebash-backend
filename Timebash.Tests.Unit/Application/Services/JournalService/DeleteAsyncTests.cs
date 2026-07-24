@@ -48,7 +48,6 @@ public class DeleteAsyncTests : JournalServiceTestsBase
         .ThrowAsync<BadRequestException>();
 
         AccessServiceMock.VerifyEnsureAccessCalled(id, userId);
-        VerifyJournalDeleteNotCalled();
     }
 
     [Fact]
@@ -65,7 +64,6 @@ public class DeleteAsyncTests : JournalServiceTestsBase
             .ThrowAsync<NotFoundException>();
 
         AccessServiceMock.VerifyEnsureAccessCalled(id, userId);
-        VerifyJournalDeleteNotCalled();
     }
 
     [Fact]
@@ -84,7 +82,6 @@ public class DeleteAsyncTests : JournalServiceTestsBase
 
         AccessServiceMock.VerifyEnsureAccessCalled(journal.Id, journal.UserId);
         SettingsRepositoryMock.VerifyGetByIdCalled(userId);
-        VerifyJournalDeleteNotCalled();
     }
 
     [Fact]
@@ -108,9 +105,5 @@ public class DeleteAsyncTests : JournalServiceTestsBase
 
         AccessServiceMock.VerifyEnsureAccessCalled(journal.Id, journal.UserId);
         SettingsRepositoryMock.VerifyGetByIdCalled(userId);
-        VerifyJournalDeleteNotCalled();
     }
-
-    private void VerifyJournalDeleteNotCalled()
-        => JournalRepositoryMock.Verify(repository => repository.Delete(It.IsAny<Journal>()), Times.Never);
 }

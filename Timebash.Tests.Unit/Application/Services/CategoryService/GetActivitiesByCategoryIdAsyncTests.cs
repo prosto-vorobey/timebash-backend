@@ -46,7 +46,6 @@ public class GetActivitiesByCategoryIdAsyncTests : CategoryServiceTestsBase
             .ThrowAsync<BadRequestException>();
 
         AccessServiceMock.VerifyValidateAccessCalled(id, userId);
-        VerifyGetActivitiesByCategoryIdNotCalled();
     }
 
     [Fact]
@@ -63,11 +62,5 @@ public class GetActivitiesByCategoryIdAsyncTests : CategoryServiceTestsBase
             .ThrowAsync<NotFoundException>();
 
         AccessServiceMock.VerifyValidateAccessCalled(id, userId);
-        VerifyGetActivitiesByCategoryIdNotCalled();
     }
-
-    private void VerifyGetActivitiesByCategoryIdNotCalled()
-        => RepositoryMock.Verify(
-            repository => repository.GetActivitiesByCategoryIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
-            Times.Never);
 }

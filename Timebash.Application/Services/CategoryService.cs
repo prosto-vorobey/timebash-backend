@@ -1,25 +1,26 @@
 using Timebash.Application.Extensions;
 using Timebash.Application.Extensions.Requests;
-using Timebash.Application.Helpers;
 using Timebash.Core.DTOs.Requests;
 using Timebash.Core.DTOs.Responses;
 using Timebash.Core.Services;
 using Timebash.Core.Contracts;
 using Timebash.Core.Repositories;
+using Timebash.Core.Services.Access;
 
 namespace Timebash.Application.Services;
 
-public class CategoryService(IUnitOfWork unitOfWork, ICategoryRepository repository) : ICategoryService
+public class CategoryService(IUnitOfWork unitOfWork, ICategoryRepository repository, ICategoryAccessService accessService) : ICategoryService
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly ICategoryRepository _repository = repository;
+    private readonly ICategoryAccessService _accessService = accessService;
 
     public async Task<CategoryResponse> GetByIdAsync(Guid id, Guid userId, CancellationToken cancellationToken)
-        => (await EntityAccessGuard.EnsureCategoryAccessAsync(_repository, id, userId, cancellationToken)).ToResponse();
+        => (await _accessService.EnsureAccessAsync(id, userId, cancellationToken)).ToResponse();
 
     public async Task<ActivitiesListResponse> GetActivitiesByCategoryIdAsync(Guid id, Guid userId, CancellationToken cancellationToken)
     {
-        await EntityAccessGuard.ValidateCategoryAccessAsync(_repository, id, userId, cancellationToken);
+        await _accessService.ValidateAccessAsync(id, userId, cancellationToken);
         var activities = await _repository.GetActivitiesByCategoryIdAsync(id, cancellationToken);
 
         return new ([.. activities.Select(activity => activity.ToResponse())]);
@@ -37,7 +38,7 @@ public class CategoryService(IUnitOfWork unitOfWork, ICategoryRepository reposit
 
     public async Task<bool> UpdateAsync(Guid id, CategoryRequest categoryRequest, Guid userId, CancellationToken cancellationToken)
     {
-        var category = await EntityAccessGuard.EnsureCategoryAccessAsync(_repository, id, userId, cancellationToken);
+        var category = await _accessService.EnsureAccessAsync(id, userId, cancellationToken);
         if (!category.ApplyUpdate(categoryRequest)) return false;
 
         category.UpdatedAt = DateTime.UtcNow;
@@ -48,7 +49,7 @@ public class CategoryService(IUnitOfWork unitOfWork, ICategoryRepository reposit
 
     public async Task DeleteAsync(Guid id, Guid userId, CancellationToken cancellationToken)
     {
-        var category = await EntityAccessGuard.EnsureCategoryAccessAsync(_repository, id, userId, cancellationToken);
+        var category = await _accessService.EnsureAccessAsync(id, userId, cancellationToken);
         _repository.Delete(category);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }

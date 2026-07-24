@@ -1,11 +1,11 @@
 using Timebash.Application.Extensions;
-using Timebash.Application.Helpers;
 using Timebash.Core.Contracts;
 using Timebash.Core.DTOs.Requests;
 using Timebash.Core.DTOs.Responses;
 using Timebash.Core.Exceptions;
 using Timebash.Core.Repositories;
 using Timebash.Core.Services;
+using Timebash.Core.Services.Access;
 
 namespace Timebash.Application.Services;
 
@@ -15,6 +15,8 @@ public class MeService(
     IUserSettingsRepository settingsRepository,
     IJournalRepository journalRepository,
     ICategoryRepository categoryRepository,
+    IUserAccessService userAccessService,
+    IJournalAccessService journalAccessService,
     IPasswordService passwordService) : IMeService
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
@@ -22,31 +24,32 @@ public class MeService(
     private readonly IUserSettingsRepository _settingsRepository = settingsRepository;
     private readonly IJournalRepository _journalRepository = journalRepository;
     private readonly ICategoryRepository _categoryRepository = categoryRepository;
+    private readonly IUserAccessService _userAccessService = userAccessService;
+    private readonly IJournalAccessService _journalAccessService = journalAccessService;
     private readonly IPasswordService _passwordService = passwordService;
 
     public async Task<UserResponse> GetAsync(Guid userId, CancellationToken cancellationToken)
-        => (await EntityAccessGuard.EnsureUserAccessAsync(_userRepository, userId, cancellationToken)).ToResponse();
+        => (await _userAccessService.EnsureAccessAsync(userId, cancellationToken)).ToResponse();
 
     public async Task<JournalsListResponse> GetJournalsAsync(Guid userId, CancellationToken cancellationToken)
     {
-        await EntityAccessGuard.ValidateUserExistsAsync(_userRepository, userId, cancellationToken);
+        await _userAccessService.ValidateExistsAsync(userId, cancellationToken);
         var journals = await _journalRepository.GetByUserIdAsync(userId, cancellationToken);
         return new ([.. journals.Select(journal => journal.ToResponse())]);
     }
 
     public async Task<CategoriesListResponse> GetCategoriesAsync(Guid userId, CancellationToken cancellationToken)
     {
-        await EntityAccessGuard.ValidateUserExistsAsync(_userRepository, userId, cancellationToken);
+        await _userAccessService.ValidateExistsAsync(userId, cancellationToken);
         var categories = await _categoryRepository.GetByUserIdAsync(userId, cancellationToken);
         return new ([.. categories.Select(category => category.ToResponse())]);
     }
 
     public async Task<JournalResponse> GetDefaultJournalAsync(Guid userId, CancellationToken cancellationToken)
     {
-        await EntityAccessGuard.ValidateUserExistsAsync(_userRepository, userId, cancellationToken);
+        await _userAccessService.ValidateExistsAsync(userId, cancellationToken);
         var userSettings = await _settingsRepository.GetByIdAsync(userId, cancellationToken) ?? throw new NotFoundException();
-        var journal = await _journalRepository.GetByIdAsync(userSettings.DefaultJournalId, cancellationToken)
-            ?? throw new NotFoundException();
+        var journal = await _journalRepository.GetByIdAsync(userSettings.DefaultJournalId, cancellationToken) ?? throw new NotFoundException();
 
         return journal.ToResponse();
     }
@@ -56,7 +59,7 @@ public class MeService(
         if (await _userRepository.ExistsByNameAsync(request.Name, cancellationToken)) 
             throw new ResourceConflictException(nameof(request.Name), "User with name already exists");
 
-        var user = await EntityAccessGuard.EnsureUserAccessAsync(_userRepository, userId, cancellationToken);
+        var user = await _userAccessService.EnsureAccessAsync(userId, cancellationToken);
         if (request.Name == user.Name) return false;
 
         user.Name = request.Name;
@@ -70,7 +73,7 @@ public class MeService(
         if (await _userRepository.ExistsByEmailAsync(request.Email, cancellationToken)) 
             throw new ResourceConflictException(nameof(request.Email), "User with email already exists");
 
-        var user = await EntityAccessGuard.EnsureUserAccessAsync(_userRepository, userId, cancellationToken);
+        var user = await _userAccessService.EnsureAccessAsync(userId, cancellationToken);
         if (request.Email == user.Email) return false;
 
         user.Email = request.Email;
@@ -81,7 +84,7 @@ public class MeService(
 
     public async Task<bool> UpdatePasswordAsync(PasswordUpdateRequest request, Guid userId, CancellationToken cancellationToken)
     {
-        var user = await EntityAccessGuard.EnsureUserAccessAsync(_userRepository, userId, cancellationToken);
+        var user = await _userAccessService.EnsureAccessAsync(userId, cancellationToken);
         if (!_passwordService.VerifyPassword(user, request.CurrentPassword)) throw new UnauthorizedException("Current password is incorrect");
         if (request.CurrentPassword == request.NewPassword) return false;
 
@@ -93,8 +96,8 @@ public class MeService(
 
     public async Task<bool> UpdateDefaultJournalAsync(DefaultJournalUpdateRequest request, Guid userId, CancellationToken cancellationToken)
     {
-        await EntityAccessGuard.ValidateUserExistsAsync(_userRepository, userId, cancellationToken);
-        await EntityAccessGuard.ValidateJournalAccessAsync(_journalRepository, request.JournalId, userId, cancellationToken);
+        await _userAccessService.ValidateExistsAsync(userId, cancellationToken);
+        await _journalAccessService.ValidateAccessAsync(request.JournalId, userId, cancellationToken);
 
         var userSettings = await _settingsRepository.GetByIdAsync(userId, cancellationToken) ?? throw new NotFoundException();
         if (userSettings.DefaultJournalId == request.JournalId) return false;
@@ -107,7 +110,7 @@ public class MeService(
 
     public async Task DeleteAsync(Guid userId, CancellationToken cancellationToken)
     {
-        var user = await EntityAccessGuard.EnsureUserAccessAsync(_userRepository, userId, cancellationToken);
+        var user = await _userAccessService.EnsureAccessAsync(userId, cancellationToken);
 
         await _settingsRepository.DeleteAsync(userId, cancellationToken);
         _userRepository.Delete(user);

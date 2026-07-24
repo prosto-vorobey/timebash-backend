@@ -1,8 +1,8 @@
 using FluentAssertions;
-using Moq;
 using Timebash.Application.Extensions;
 using Timebash.Core.Entities;
 using Timebash.Core.Exceptions;
+using Timebash.Tests.Unit.TestInfrastructure.MockExtensions.AccessServices;
 
 namespace Timebash.Tests.Unit.Application.Services.JournalService;
 
@@ -14,28 +14,43 @@ public class GetByIdAsyncTests : JournalServiceTestsBase
         var journal = new Journal(Guid.NewGuid(), Guid.NewGuid(), Faker.Lorem.Word());
         var expected = journal.ToResponse();
 
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
+        AccessServiceMock.SetupEnsureAccess(journal);
 
         var result = await Service.GetByIdAsync(journal.Id, journal.UserId, CancellationToken.None);
+        
         result.Should().BeEquivalentTo(expected);
+        AccessServiceMock.VerifyEnsureAccessCalled(journal.Id, journal.UserId);
     }
 
     [Fact]
     public async Task GetById_EmptyId_ShouldThrowBadRequest()
-        => await FluentActions
-            .Awaiting(() => Service.GetByIdAsync(Guid.Empty, Guid.NewGuid(), CancellationToken.None))
+    {
+        var id = Guid.Empty;
+        var userId = Guid.NewGuid();
+
+        AccessServiceMock.SetupEnsureAccessThrowsBadRequest(id, userId);
+
+        await FluentActions
+            .Awaiting(() => Service.GetByIdAsync(id, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
+
+        AccessServiceMock.VerifyEnsureAccessCalled(id, userId);
+    }
 
     [Fact]
     public async Task GetById_JournalNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((Journal?)null);
+        var userId = Guid.NewGuid();
+
+        AccessServiceMock.SetupEnsureAccessThrowsNotFound(id, userId);
 
         await FluentActions
-            .Awaiting(() => Service.GetByIdAsync(id, Guid.NewGuid(), CancellationToken.None))
+            .Awaiting(() => Service.GetByIdAsync(id, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        AccessServiceMock.VerifyEnsureAccessCalled(id, userId);
     }
 }

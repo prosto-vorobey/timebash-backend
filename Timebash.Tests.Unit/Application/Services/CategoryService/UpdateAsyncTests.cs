@@ -1,9 +1,10 @@
 using FluentAssertions;
-using Moq;
 using Timebash.Application.Extensions;
 using Timebash.Core.DTOs.Requests;
 using Timebash.Core.Entities;
 using Timebash.Core.Exceptions;
+using Timebash.Tests.Unit.TestInfrastructure.MockExtensions;
+using Timebash.Tests.Unit.TestInfrastructure.MockExtensions.AccessServices;
 
 namespace Timebash.Tests.Unit.Application.Services.CategoryService;
 
@@ -25,7 +26,8 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
         };
         expected.ApplyUpdate(request);
 
-        RepositoryMock.Setup(repository => repository.GetByIdAsync(category.Id, It.IsAny<CancellationToken>())).ReturnsAsync(category);
+        AccessServiceMock.SetupEnsureAccess(category);
+        UnitOfWorkMock.SetupSaveChanges();
 
         var result = await Service.UpdateAsync(category.Id, request, category.UserId, CancellationToken.None);
 
@@ -37,7 +39,8 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
                 .Excluding(category => category.UpdatedAt)
                 .Excluding(category => category.CreatedAt));
 
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        AccessServiceMock.VerifyEnsureAccessCalled(category.Id, category.UserId);
+        UnitOfWorkMock.VerifySaveChangesCalled();
     }
 
     [Fact]
@@ -55,7 +58,7 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
             Keywords = category.Keywords
         };
 
-        RepositoryMock.Setup(repository => repository.GetByIdAsync(category.Id, It.IsAny<CancellationToken>())).ReturnsAsync(category);
+        AccessServiceMock.SetupEnsureAccess(category);
 
         var result = await Service.UpdateAsync(category.Id, request, category.UserId, CancellationToken.None);
 
@@ -67,7 +70,7 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
                 .Excluding(category => category.UpdatedAt)
                 .Excluding(category => category.CreatedAt));
 
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        AccessServiceMock.VerifyEnsureAccessCalled(category.Id, category.UserId);
     }
 
     [Fact]
@@ -85,7 +88,7 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
             Keywords = [.. category.Keywords.Shuffle()]
         };
 
-        RepositoryMock.Setup(repository => repository.GetByIdAsync(category.Id, It.IsAny<CancellationToken>())).ReturnsAsync(category);
+        AccessServiceMock.SetupEnsureAccess(category);
 
         var result = await Service.UpdateAsync(category.Id, request, category.UserId, CancellationToken.None);
 
@@ -97,29 +100,38 @@ public class UpdateAsyncTests : CategoryServiceTestsBase
                 .Excluding(category => category.UpdatedAt)
                 .Excluding(category => category.CreatedAt));
 
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        AccessServiceMock.VerifyEnsureAccessCalled(category.Id, category.UserId);
     }
 
     [Fact]
     public async Task Update_EmptyId_ShouldThrowBadRequest()
-        => await FluentActions
-            .Awaiting(() => Service.UpdateAsync(
-                Guid.Empty, 
-                new CategoryRequest(Faker.Lorem.Word(), "#000000", []), Guid.NewGuid(), CancellationToken.None))
+    {
+        var id = Guid.Empty;
+        var userId = Guid.NewGuid();
+
+        AccessServiceMock.SetupEnsureAccessThrowsBadRequest(id, userId);
+
+        await FluentActions
+            .Awaiting(() => Service.UpdateAsync(id, new CategoryRequest(Faker.Lorem.Word(), "#000000", []), userId, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
+
+        AccessServiceMock.VerifyEnsureAccessCalled(id, userId);
+    }
 
     [Fact]
     public async Task Update_CategoryNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        RepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((Category?)null);
+        var userId = Guid.NewGuid();
+
+        AccessServiceMock.SetupEnsureAccessThrowsNotFound(id, userId);
 
         await FluentActions
-            .Awaiting(() => Service.UpdateAsync(
-                id, 
-                new CategoryRequest(Faker.Lorem.Word(), "#000000", []), Guid.NewGuid(), CancellationToken.None))
+            .Awaiting(() => Service.UpdateAsync(id, new CategoryRequest(Faker.Lorem.Word(), "#000000", []), userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        AccessServiceMock.VerifyEnsureAccessCalled(id, userId);
     }
 }

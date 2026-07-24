@@ -4,6 +4,7 @@ using Timebash.Application.Extensions;
 using Timebash.Core.DTOs.Responses;
 using Timebash.Core.Entities;
 using Timebash.Core.Exceptions;
+using Timebash.Tests.Unit.TestInfrastructure.MockExtensions.AccessServices;
 
 namespace Timebash.Tests.Unit.Application.Services.ActivityService;
 
@@ -20,9 +21,7 @@ public class GetCategoriesByActivityIdAsyncTests : ActivityServiceTestsBase
         };
         var expected = new CategoriesListResponse([.. categories.Select(category => category.ToResponse())]);
 
-        ActivityRepositoryMock
-            .Setup(repository => repository.IsOwnedByUserAsync(activity.Id, userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+        ActivityAccessServiceMock.SetupValidateAccess(activity.Id, userId);
         ActivityRepositoryMock
             .Setup(repository => repository.GetCategoriesByActivityIdAsync(activity.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(categories);
@@ -30,25 +29,39 @@ public class GetCategoriesByActivityIdAsyncTests : ActivityServiceTestsBase
         var result = await Service.GetCategoriesByActivityIdAsync(activity.Id, userId, CancellationToken.None);
 
         result.Should().BeEquivalentTo(expected, options => options.WithoutStrictOrdering());
+        ActivityAccessServiceMock.VerifyValidateAccessCalled(activity.Id, userId);
+        ActivityRepositoryMock.Verify(repository => repository.GetCategoriesByActivityIdAsync(activity.Id, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task GetCategoriesByActivityId_EmptyId_ShouldThrowBadRequest()
-        => await FluentActions
-            .Awaiting(() => Service.GetCategoriesByActivityIdAsync(Guid.Empty, Guid.NewGuid(), CancellationToken.None))
+    {
+        var id = Guid.Empty;
+        var userId = Guid.NewGuid();
+
+        ActivityAccessServiceMock.SetupValidateAccessThrowsBadRequest(id, userId);
+
+        await FluentActions
+            .Awaiting(() => Service.GetCategoriesByActivityIdAsync(id, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
+
+        ActivityAccessServiceMock.VerifyValidateAccessCalled(id, userId);
+    }
 
     [Fact]
     public async Task GetCategoriesByActivityId_ActivityNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        ActivityRepositoryMock.Setup(repository => repository.IsOwnedByUserAsync(id, userId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+
+        ActivityAccessServiceMock.SetupValidateAccessThrowsNotFound(id, userId);
 
         await FluentActions
             .Awaiting(() => Service.GetCategoriesByActivityIdAsync(id, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        ActivityAccessServiceMock.VerifyValidateAccessCalled(id, userId);
     }
 }

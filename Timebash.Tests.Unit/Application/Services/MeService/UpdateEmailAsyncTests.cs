@@ -3,6 +3,8 @@ using Moq;
 using Timebash.Core.DTOs.Requests;
 using Timebash.Core.Entities;
 using Timebash.Core.Exceptions;
+using Timebash.Tests.Unit.TestInfrastructure.MockExtensions;
+using Timebash.Tests.Unit.TestInfrastructure.MockExtensions.AccessServices;
 
 namespace Timebash.Tests.Unit.Application.Services.MeService;
 
@@ -17,8 +19,9 @@ public class UpdateEmailAsyncTests : MeServiceTestsBase
         var currentCreatedTime = user.CreatedAt;
         var request = new UserEmailUpdateRequest($"{user.Email} changed");
 
-        UserRepositoryMock.Setup(repository => repository.ExistsByEmailAsync(request.Email, It.IsAny<CancellationToken>())).ReturnsAsync(false);
-        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+        SetupUserExistsByEmail(request.Email);
+        UserAccessServiceMock.SetupEnsureAccess(user);
+        UnitOfWorkMock.SetupSaveChanges();
 
         var result = await Service.UpdateEmailAsync(request, id, CancellationToken.None);
 
@@ -29,8 +32,9 @@ public class UpdateEmailAsyncTests : MeServiceTestsBase
         user.PasswordHash.Should().BeNull();
         user.CreatedAt.Should().Be(currentCreatedTime);
 
-        UserRepositoryMock.Verify(repository => repository.ExistsByEmailAsync(request.Email, It.IsAny<CancellationToken>()), Times.Once);
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        VerifyUserExistsByEmailCalled(request.Email);
+        UserAccessServiceMock.VerifyEnsureAccessCalled(id);
+        UnitOfWorkMock.VerifySaveChangesCalled();;
     }
 
     [Fact]
@@ -43,8 +47,8 @@ public class UpdateEmailAsyncTests : MeServiceTestsBase
         var currentCreatedTime = user.CreatedAt;
         var request = new UserEmailUpdateRequest(user.Email);
 
-        UserRepositoryMock.Setup(repository => repository.ExistsByEmailAsync(request.Email, It.IsAny<CancellationToken>())).ReturnsAsync(false);
-        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+        SetupUserExistsByEmail(request.Email);
+        UserAccessServiceMock.SetupEnsureAccess(user);
 
         var result = await Service.UpdateEmailAsync(request, id, CancellationToken.None);
 
@@ -55,34 +59,44 @@ public class UpdateEmailAsyncTests : MeServiceTestsBase
         user.PasswordHash.Should().BeNull();
         user.CreatedAt.Should().Be(currentCreatedTime);
 
-        UserRepositoryMock.Verify(repository => repository.ExistsByEmailAsync(request.Email, It.IsAny<CancellationToken>()), Times.Once);
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        VerifyUserExistsByEmailCalled(request.Email);
+        UserAccessServiceMock.VerifyEnsureAccessCalled(id);
     }
 
     [Fact]
     public async Task UpdateEmail_EmailAlreadyExists_ShouldThrowResourceConflictException()
     {
+        var user = new User(Guid.NewGuid(), Faker.Internet.UserName(), Faker.Internet.Email());
         var request = new UserEmailUpdateRequest(Faker.Internet.Email());
-        UserRepositoryMock.Setup(repository => repository.ExistsByEmailAsync(request.Email, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+        SetupUserExistsByEmail(request.Email, true);
+        UserAccessServiceMock.SetupEnsureAccess(user);
 
         var exception = await FluentActions
-            .Awaiting(() => Service.UpdateEmailAsync(request, Guid.NewGuid(), CancellationToken.None))
+            .Awaiting(() => Service.UpdateEmailAsync(request, user.Id, CancellationToken.None))
             .Should()
             .ThrowAsync<ResourceConflictException>();
         exception.Which.Field.Should().Be("Email");
+
+        VerifyUserExistsByEmailCalled(request.Email);
     }
 
     [Fact]
     public async Task UpdateEmail_EmptyId_ShouldThrowBadRequest()
     {
+        var id = Guid.Empty;
         var request = new UserEmailUpdateRequest(Faker.Internet.Email());
-        UserRepositoryMock.Setup(repository => repository.ExistsByEmailAsync(request.Email, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+
+        SetupUserExistsByEmail(request.Email);
+        UserAccessServiceMock.SetupEnsureAccessThrowsBadRequest(id);
 
         await FluentActions
-            .Awaiting(() => Service.UpdateEmailAsync(request, Guid.Empty, CancellationToken.None))
+            .Awaiting(() => Service.UpdateEmailAsync(request, id, CancellationToken.None))
             .Should()
-            .ThrowAsync<BadRequestException>()
-            .WithMessage("Invalid id");
+            .ThrowAsync<BadRequestException>();
+
+        VerifyUserExistsByEmailCalled(request.Email);
+        UserAccessServiceMock.VerifyEnsureAccessCalled(id);
     }
 
     [Fact]
@@ -91,12 +105,21 @@ public class UpdateEmailAsyncTests : MeServiceTestsBase
         var id = Guid.NewGuid();
         var request = new UserEmailUpdateRequest(Faker.Internet.Email());
 
-        UserRepositoryMock.Setup(repository => repository.ExistsByEmailAsync(request.Email, It.IsAny<CancellationToken>())).ReturnsAsync(false);
-        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
+        SetupUserExistsByEmail(request.Email);
+        UserAccessServiceMock.SetupEnsureAccessThrowsNotFound(id);
 
         await FluentActions
             .Awaiting(() => Service.UpdateEmailAsync(request, id, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        VerifyUserExistsByEmailCalled(request.Email);
+        UserAccessServiceMock.VerifyEnsureAccessCalled(id);
     }
+
+    private void SetupUserExistsByEmail(string email, bool exists = false)
+        => UserRepositoryMock.Setup(repository => repository.ExistsByEmailAsync(email, It.IsAny<CancellationToken>())).ReturnsAsync(exists);
+
+    private void VerifyUserExistsByEmailCalled(string email)
+        => UserRepositoryMock.Verify(repository => repository.ExistsByEmailAsync(email, It.IsAny<CancellationToken>()), Times.Once);
 }

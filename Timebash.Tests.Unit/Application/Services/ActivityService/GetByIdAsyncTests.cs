@@ -1,8 +1,8 @@
 using FluentAssertions;
-using Moq;
 using Timebash.Application.Extensions;
 using Timebash.Core.Entities;
 using Timebash.Core.Exceptions;
+using Timebash.Tests.Unit.TestInfrastructure.MockExtensions.AccessServices;
 
 namespace Timebash.Tests.Unit.Application.Services.ActivityService;
 
@@ -15,32 +15,43 @@ public class GetByIdAsyncTests : ActivityServiceTestsBase
         var userId = Guid.NewGuid();
         var expected = activity.ToResponse();
 
-        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id, It.IsAny<CancellationToken>())).ReturnsAsync(activity);
-        JournalRepositoryMock
-            .Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+        ActivityAccessServiceMock.SetupEnsureAccess(activity, userId);
 
         var result = await Service.GetByIdAsync(activity.Id, userId, CancellationToken.None);
 
         result.Should().BeEquivalentTo(expected);
+        ActivityAccessServiceMock.VerifyEnsureAccessCalled(activity.Id, userId);
     }
 
     [Fact]
     public async Task GetById_EmptyId_ShouldThrowBadRequest()
-        => await FluentActions
-            .Awaiting(() => Service.GetByIdAsync(Guid.Empty, Guid.NewGuid(), CancellationToken.None))
+    {
+        var id = Guid.Empty;
+        var userId = Guid.NewGuid();
+
+        ActivityAccessServiceMock.SetupEnsureAccessThrowsBadRequest(id, userId);
+
+        await FluentActions
+            .Awaiting(() => Service.GetByIdAsync(id, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
+
+        ActivityAccessServiceMock.VerifyEnsureAccessCalled(id, userId);
+    }
 
     [Fact]
     public async Task GetById_ActivityNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        ActivityRepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((Activity?)null);
+        var userId = Guid.NewGuid();
+
+        ActivityAccessServiceMock.SetupEnsureAccessThrowsNotFound(id, userId);
 
         await FluentActions
-            .Awaiting(() => Service.GetByIdAsync(id, Guid.NewGuid(), CancellationToken.None))
+            .Awaiting(() => Service.GetByIdAsync(id, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        ActivityAccessServiceMock.VerifyEnsureAccessCalled(id, userId);
     }
 }

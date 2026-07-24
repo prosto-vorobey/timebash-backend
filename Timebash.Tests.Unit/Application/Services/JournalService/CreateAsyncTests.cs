@@ -4,6 +4,7 @@ using Timebash.Application.Extensions;
 using Timebash.Application.Extensions.Requests;
 using Timebash.Core.DTOs.Requests;
 using Timebash.Core.Entities;
+using Timebash.Tests.Unit.TestInfrastructure.MockExtensions;
 
 namespace Timebash.Tests.Unit.Application.Services.JournalService;
 
@@ -17,6 +18,7 @@ public class CreateAsyncTests : JournalServiceTestsBase
 
         var capturedJournals = new List<Journal>();
         JournalRepositoryMock.Setup(repository => repository.Add(It.IsAny<Journal>())).Callback(capturedJournals.Add);
+        UnitOfWorkMock.SetupSaveChanges();
 
         var result = await Service.CreateAsync(request, userId, CancellationToken.None);
 
@@ -31,6 +33,6 @@ public class CreateAsyncTests : JournalServiceTestsBase
                 .Excluding(journal => journal.UpdatedAt));
 
         result.Should().BeEquivalentTo(capturedJournal.ToResponse());
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        UnitOfWorkMock.VerifySaveChangesCalled();
     }
 }

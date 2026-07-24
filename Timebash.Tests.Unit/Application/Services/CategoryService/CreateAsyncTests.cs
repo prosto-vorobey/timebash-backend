@@ -4,6 +4,7 @@ using Timebash.Application.Extensions;
 using Timebash.Application.Extensions.Requests;
 using Timebash.Core.DTOs.Requests;
 using Timebash.Core.Entities;
+using Timebash.Tests.Unit.TestInfrastructure.MockExtensions;
 
 namespace Timebash.Tests.Unit.Application.Services.CategoryService;
 
@@ -14,9 +15,10 @@ public class CreateAsyncTests : CategoryServiceTestsBase
     {
         var request = new CategoryRequest(Faker.Lorem.Word(), "#000000", [.. Faker.Lorem.Words()]);
         var userId = Guid.NewGuid();
-
         var capturedCategories = new List<Category>();
+
         RepositoryMock.Setup(repository => repository.Add(It.IsAny<Category>())).Callback<Category>(capturedCategories.Add);
+        UnitOfWorkMock.SetupSaveChanges();
 
         var result = await Service.CreateAsync(request, userId, CancellationToken.None);
 
@@ -31,6 +33,6 @@ public class CreateAsyncTests : CategoryServiceTestsBase
                 .Excluding(category => category.UpdatedAt));
 
         result.Should().BeEquivalentTo(capturedCategory.ToResponse());
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        UnitOfWorkMock.VerifySaveChangesCalled();
     }
 }

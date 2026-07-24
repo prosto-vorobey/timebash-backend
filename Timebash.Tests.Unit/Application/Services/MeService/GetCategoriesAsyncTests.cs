@@ -4,6 +4,7 @@ using Timebash.Application.Extensions;
 using Timebash.Core.DTOs.Responses;
 using Timebash.Core.Entities;
 using Timebash.Core.Exceptions;
+using Timebash.Tests.Unit.TestInfrastructure.MockExtensions.AccessServices;
 
 namespace Timebash.Tests.Unit.Application.Services.MeService;
 
@@ -19,30 +20,41 @@ public class GetCategoriesAsyncTests : MeServiceTestsBase
         };
         var expected = new CategoriesListResponse([.. categories.Select(category => category.ToResponse())]);
 
-        UserRepositoryMock.Setup(repository => repository.ExistsAsync(userId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        UserAccessServiceMock.SetupValidateExists(userId);
         CategoryRepositoryMock.Setup(repository => repository.GetByUserIdAsync(userId, It.IsAny<CancellationToken>())).ReturnsAsync(categories);
 
         var result = await Service.GetCategoriesAsync(userId, CancellationToken.None);
+
         result.Should().BeEquivalentTo(expected);
+        UserAccessServiceMock.VerifyValidateExistsCalled(userId);
+        CategoryRepositoryMock.Verify(repository => repository.GetByUserIdAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task GetCategories_EmptyId_ShouldThrowBadRequest()
-        => await FluentActions
-            .Awaiting(() => Service.GetCategoriesAsync(Guid.Empty, CancellationToken.None))
+    {
+        var id = Guid.Empty;
+        UserAccessServiceMock.SetupValidateExistsThrowsBadRequest(id);
+
+        await FluentActions
+            .Awaiting(() => Service.GetCategoriesAsync(id, CancellationToken.None))
             .Should()
-            .ThrowAsync<BadRequestException>()
-            .WithMessage("Invalid id");
+            .ThrowAsync<BadRequestException>();
+
+        UserAccessServiceMock.VerifyValidateExistsCalled(id);
+    }
 
     [Fact]
     public async Task GetCategories_UserNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        UserRepositoryMock.Setup(repository => repository.ExistsAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        UserAccessServiceMock.SetupValidateExistsThrowsNotFound(id);
 
         await FluentActions
             .Awaiting(() => Service.GetCategoriesAsync(id, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        UserAccessServiceMock.VerifyValidateExistsCalled(id);
     }
 }

@@ -3,6 +3,8 @@ using Moq;
 using Timebash.Core.DTOs.Requests;
 using Timebash.Core.Entities;
 using Timebash.Core.Exceptions;
+using Timebash.Tests.Unit.TestInfrastructure.MockExtensions;
+using Timebash.Tests.Unit.TestInfrastructure.MockExtensions.AccessServices;
 
 namespace Timebash.Tests.Unit.Application.Services.MeService;
 
@@ -20,9 +22,10 @@ public class UpdatePasswordAsyncTests : MeServiceTestsBase
         var newPasswordHash = Faker.Random.Hash();
         var request = new PasswordUpdateRequest(currentPassword, Faker.Internet.Password());
 
-        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(user);
-        PasswordServiceMock.Setup(service => service.VerifyPassword(user, request.CurrentPassword)).Returns(true);
+        UserAccessServiceMock.SetupEnsureAccess(user);
+        SetupVerifyPassword(user, request.CurrentPassword);
         PasswordServiceMock.Setup(service => service.HashPassword(user, request.NewPassword)).Returns(newPasswordHash);
+        UnitOfWorkMock.SetupSaveChanges();
 
         var result = await Service.UpdatePasswordAsync(request, id, CancellationToken.None);
 
@@ -33,8 +36,10 @@ public class UpdatePasswordAsyncTests : MeServiceTestsBase
         user.Email.Should().Be(email);
         user.CreatedAt.Should().Be(currentCreatedTime);
 
-        PasswordServiceMock.Verify(service => service.HashPassword(user, request.NewPassword), Times.Once);
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);        
+        UserAccessServiceMock.VerifyEnsureAccessCalled(id);
+        VerifyVerifyPasswordCalled(user, request.CurrentPassword);
+        VerifyHashPasswordCalled(user, request.NewPassword);
+        UnitOfWorkMock.VerifySaveChangesCalled();
     }
 
     [Fact]
@@ -53,8 +58,8 @@ public class UpdatePasswordAsyncTests : MeServiceTestsBase
         var currentCreatedTime = user.CreatedAt;
         var request = new PasswordUpdateRequest(currentPassword, currentPassword);
 
-        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(user);
-        PasswordServiceMock.Setup(service => service.VerifyPassword(user, request.CurrentPassword)).Returns(true);
+        UserAccessServiceMock.SetupEnsureAccess(user);
+        SetupVerifyPassword(user, request.CurrentPassword);
 
         var result = await Service.UpdatePasswordAsync(request, id, CancellationToken.None);
 
@@ -65,20 +70,26 @@ public class UpdatePasswordAsyncTests : MeServiceTestsBase
         user.PasswordHash.Should().Be(currentPasswordHash);
         user.CreatedAt.Should().Be(currentCreatedTime);
 
-        PasswordServiceMock.Verify(service => service.HashPassword(It.IsAny<User>(), It.IsAny<string>()), Times.Never);
-        UnitOfWorkMock.Verify(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        UserAccessServiceMock.VerifyEnsureAccessCalled(id);
+        VerifyVerifyPasswordCalled(user, request.CurrentPassword);
     }
 
     [Fact]
     public async Task UpdatePassword_EmptyId_ShouldThrowBadRequest()
-        => await FluentActions
+    {
+        var id = Guid.Empty;
+        UserAccessServiceMock.SetupEnsureAccessThrowsBadRequest(id);
+
+        await FluentActions
             .Awaiting(() => Service.UpdatePasswordAsync(
-                new(Faker.Internet.Password(), Faker.Internet.Password()), 
-                Guid.Empty, 
+                new(Faker.Internet.Password(), Faker.Internet.Password()),
+                id,
                 CancellationToken.None))
             .Should()
-            .ThrowAsync<BadRequestException>()
-            .WithMessage("Invalid id");
+            .ThrowAsync<BadRequestException>();
+
+        UserAccessServiceMock.VerifyEnsureAccessCalled(id);
+    }
 
     [Fact]
     public async Task UpdatePassword_UserNotFound_ShouldThrowNotFound()
@@ -86,12 +97,14 @@ public class UpdatePasswordAsyncTests : MeServiceTestsBase
         var id = Guid.NewGuid();
         var request = new PasswordUpdateRequest(Faker.Internet.Password(), Faker.Internet.Password());
 
-        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
+        UserAccessServiceMock.SetupEnsureAccessThrowsNotFound(id);
 
         await FluentActions
             .Awaiting(() => Service.UpdatePasswordAsync(request, id, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        UserAccessServiceMock.VerifyEnsureAccessCalled(id);
     }
 
     [Fact]
@@ -100,12 +113,24 @@ public class UpdatePasswordAsyncTests : MeServiceTestsBase
         var user = new User(Guid.NewGuid(), Faker.Internet.UserName(), Faker.Internet.Email());
         var request = new PasswordUpdateRequest(Faker.Internet.Password(), Faker.Internet.Password());
 
-        UserRepositoryMock.Setup(repository => repository.GetByIdAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(user);
-        PasswordServiceMock.Setup(service => service.VerifyPassword(user, request.CurrentPassword)).Returns(false);
+        UserAccessServiceMock.SetupEnsureAccess(user);
+        SetupVerifyPassword(user, request.CurrentPassword, false);
 
         await FluentActions
             .Awaiting(() => Service.UpdatePasswordAsync(request, user.Id, CancellationToken.None))
             .Should()
             .ThrowAsync<UnauthorizedException>();
+
+        UserAccessServiceMock.VerifyEnsureAccessCalled(user.Id);
+        VerifyVerifyPasswordCalled(user, request.CurrentPassword);
     }
+
+    private void SetupVerifyPassword(User user, string currentPassword, bool isValid = true)
+        => PasswordServiceMock.Setup(service => service.VerifyPassword(user, currentPassword)).Returns(isValid);
+
+    private void VerifyVerifyPasswordCalled(User user, string currentPassword)
+        => PasswordServiceMock.Verify(service => service.VerifyPassword(user, currentPassword), Times.Once);
+
+    private void VerifyHashPasswordCalled(User user, string newPassword)
+        => PasswordServiceMock.Verify(service => service.HashPassword(user, newPassword), Times.Once);
 }

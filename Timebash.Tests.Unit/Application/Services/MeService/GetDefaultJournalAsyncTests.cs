@@ -1,8 +1,9 @@
 using FluentAssertions;
-using Moq;
 using Timebash.Application.Extensions;
 using Timebash.Core.Entities;
 using Timebash.Core.Exceptions;
+using Timebash.Tests.Unit.TestInfrastructure.MockExtensions.AccessServices;
+using Timebash.Tests.Unit.TestInfrastructure.MockExtensions.Repositories;
 
 namespace Timebash.Tests.Unit.Application.Services.MeService;
 
@@ -20,45 +21,61 @@ public class GetDefaultJournalAsyncTests : MeServiceTestsBase
         var journal = new Journal(userSettings.DefaultJournalId, userId, Faker.Lorem.Word());
         var expected = journal.ToResponse();
 
-        UserRepositoryMock.Setup(repository => repository.ExistsAsync(userId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        SettingsRepositoryMock.Setup(repository => repository.GetByIdAsync(userId, It.IsAny<CancellationToken>())).ReturnsAsync(userSettings);
-        JournalRepositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
+        UserAccessServiceMock.SetupValidateExists(userId);
+        SettingsRepositoryMock.SetupGetById(userSettings);
+        JournalRepositoryMock.SetupGetById(journal);
 
         var result = await Service.GetDefaultJournalAsync(userId, CancellationToken.None);
+
         result.Should().BeEquivalentTo(expected);
+        
+        UserAccessServiceMock.VerifyValidateExistsCalled(userId);
+        SettingsRepositoryMock.VerifyGetByIdCalled(userId);
+        JournalRepositoryMock.VerifyGetByIdCalled(journal.Id);
     }
 
     [Fact]
     public async Task GetDefaultJournal_EmptyId_ShouldThrowBadRequest()
-        => await FluentActions
-            .Awaiting(() => Service.GetDefaultJournalAsync(Guid.Empty, CancellationToken.None))
+    {
+        var id = Guid.Empty;
+        UserAccessServiceMock.SetupValidateExistsThrowsBadRequest(id);
+
+        await FluentActions
+            .Awaiting(() => Service.GetDefaultJournalAsync(id, CancellationToken.None))
             .Should()
-            .ThrowAsync<BadRequestException>()
-            .WithMessage("Invalid id");
+            .ThrowAsync<BadRequestException>();
+
+        UserAccessServiceMock.VerifyValidateExistsCalled(id);
+    }
 
     [Fact]
     public async Task GetDefaultJournal_UserNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        UserRepositoryMock.Setup(repository => repository.ExistsAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        UserAccessServiceMock.SetupValidateExistsThrowsNotFound(id);
 
         await FluentActions
             .Awaiting(() => Service.GetDefaultJournalAsync(id, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        UserAccessServiceMock.VerifyValidateExistsCalled(id);
     }
 
     [Fact]
     public async Task GetDefaultJournal_UserSettingsNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        UserRepositoryMock.Setup(repository => repository.ExistsAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        SettingsRepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((UserSettings?)null);
+        UserAccessServiceMock.SetupValidateExists(id);
+        SettingsRepositoryMock.SetupGetById(id);
 
         await FluentActions
             .Awaiting(() => Service.GetDefaultJournalAsync(id, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        UserAccessServiceMock.VerifyValidateExistsCalled(id);
+        SettingsRepositoryMock.VerifyGetByIdCalled(id);
     }
 
     [Fact]
@@ -71,15 +88,15 @@ public class GetDefaultJournalAsyncTests : MeServiceTestsBase
             DefaultJournalId = Guid.NewGuid()
         };
 
-        UserRepositoryMock.Setup(repository => repository.ExistsAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        SettingsRepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(userSettings);
-        JournalRepositoryMock
-            .Setup(repository => repository.GetByIdAsync(userSettings.DefaultJournalId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Journal?)null);
+        UserAccessServiceMock.SetupValidateExistsThrowsNotFound(id);
+        SettingsRepositoryMock.SetupGetById(id);
+        JournalRepositoryMock.SetupGetById(userSettings.DefaultJournalId);
 
         await FluentActions
             .Awaiting(() => Service.GetDefaultJournalAsync(id, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        UserAccessServiceMock.VerifyValidateExistsCalled(id);
     }
 }

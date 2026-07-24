@@ -15,8 +15,8 @@ public class ActivityAccessServiceTests
 
     public ActivityAccessServiceTests()
     {
-        _activityRepositoryMock = new();
-        _journalRepositoryMock = new();
+        _activityRepositoryMock = new(MockBehavior.Strict);
+        _journalRepositoryMock = new(MockBehavior.Strict);
         _service = new(_activityRepositoryMock.Object, _journalRepositoryMock.Object);
     }
 
@@ -26,13 +26,14 @@ public class ActivityAccessServiceTests
         var activity = new Activity(Guid.NewGuid(), Guid.NewGuid(), DateTime.MinValue, DateTime.MaxValue);
         var userId = Guid.NewGuid();
 
-        _activityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id, It.IsAny<CancellationToken>())).ReturnsAsync(activity);
-        _journalRepositoryMock
-            .Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+        SetupActivityGetById(activity.Id, activity);
+        _journalRepositoryMock.SetupIsUserLinked(activity.JournalId, userId, true);
 
         var result = await _service.EnsureAccessAsync(activity.Id, userId, CancellationToken.None);
         result.Should().Be(activity);
+
+        VerifyActivityGetByIdCalled(activity.Id);
+        _journalRepositoryMock.VerifyIsUserLinkedCalled(activity.JournalId, userId);
     }
 
     [Fact]
@@ -47,12 +48,14 @@ public class ActivityAccessServiceTests
     public async Task EnsureActivityAccess_NonexistentActivityId_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        _activityRepositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((Activity?)null);
+        SetupActivityGetById(id, null);
 
         await FluentActions
             .Awaiting(() => _service.EnsureAccessAsync(id, Guid.NewGuid(), CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        VerifyActivityGetByIdCalled(id);
     }
 
     [Fact]
@@ -61,15 +64,16 @@ public class ActivityAccessServiceTests
         var activity = new Activity(Guid.NewGuid(), Guid.NewGuid(), DateTime.MinValue, DateTime.MaxValue);
         var userId = Guid.NewGuid();
 
-        _activityRepositoryMock.Setup(repository => repository.GetByIdAsync(activity.Id, It.IsAny<CancellationToken>())).ReturnsAsync(activity);
-        _journalRepositoryMock
-            .Setup(repository => repository.IsUserLinkedAsync(activity.JournalId, userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
+        SetupActivityGetById(activity.Id, activity);
+        _journalRepositoryMock.SetupIsUserLinked(activity.JournalId, userId, false);
 
         await FluentActions
             .Awaiting(() => _service.EnsureAccessAsync(activity.Id, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        VerifyActivityGetByIdCalled(activity.Id);
+        _journalRepositoryMock.VerifyIsUserLinkedCalled(activity.JournalId, userId);
     }
 
     [Fact]
@@ -77,9 +81,11 @@ public class ActivityAccessServiceTests
     {
         var id = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        _activityRepositoryMock.Setup(repository => repository.IsOwnedByUserAsync(id, userId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        SetupActivityIsOwnedByUserAsync(id, userId, true);
 
         await _service.ValidateAccessAsync(id, userId, CancellationToken.None);
+
+        VerifyActivityIsOwnedByUserAsync(id, userId);
     }
 
     [Fact]
@@ -95,11 +101,27 @@ public class ActivityAccessServiceTests
     {
         var id = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        _activityRepositoryMock.Setup(repository => repository.IsOwnedByUserAsync(id, userId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        SetupActivityIsOwnedByUserAsync(id, userId, false);
 
         await FluentActions
             .Awaiting(() => _service.ValidateAccessAsync(id, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        VerifyActivityIsOwnedByUserAsync(id, userId);
     }
+
+    private void SetupActivityGetById(Guid id, Activity? activity)
+        => _activityRepositoryMock
+            .Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(activity);
+
+    private void SetupActivityIsOwnedByUserAsync(Guid id, Guid userId, bool isOwned)
+        => _activityRepositoryMock.Setup(repository => repository.IsOwnedByUserAsync(id, userId, It.IsAny<CancellationToken>())).ReturnsAsync(isOwned);
+
+    private void VerifyActivityGetByIdCalled(Guid id)
+        => _activityRepositoryMock.Verify(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>()), Times.Once);
+
+    private void VerifyActivityIsOwnedByUserAsync(Guid id, Guid userId)
+        => _activityRepositoryMock.Verify(repository => repository.IsOwnedByUserAsync(id, userId, It.IsAny<CancellationToken>()), Times.Once);
 }

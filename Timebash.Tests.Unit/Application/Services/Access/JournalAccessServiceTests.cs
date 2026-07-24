@@ -16,7 +16,7 @@ public class JournalAccessServiceTests
 
     public JournalAccessServiceTests()
     {
-        _repositoryMock = new();
+        _repositoryMock = new(MockBehavior.Strict);
         _service = new(_repositoryMock.Object);
     }
 
@@ -24,10 +24,12 @@ public class JournalAccessServiceTests
     public async Task EnsureJournalAccess_ValidAccess_ShouldReturnJournal()
     {
         var journal = new Journal(Guid.NewGuid(), Guid.NewGuid(), _faker.Lorem.Word());
-        _repositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
+        _repositoryMock.SetupGetById(journal);
 
         var result = await _service.EnsureAccessAsync(journal.Id, journal.UserId, CancellationToken.None);
         result.Should().Be(journal);
+
+        _repositoryMock.VerifyGetByIdCalled(journal.Id);
     }
 
     [Fact]
@@ -42,24 +44,28 @@ public class JournalAccessServiceTests
     public async Task EnsureJournalAccess_NonexistentJournalId_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        _repositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((Journal?)null);
+        _repositoryMock.SetupGetById(id);
 
         await FluentActions
             .Awaiting(() => _service.EnsureAccessAsync(id, Guid.NewGuid(), CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        _repositoryMock.VerifyGetByIdCalled(id);
     }
 
     [Fact]
     public async Task EnsureJournalAccess_WrongUserId_ShouldThrowNotFound()
     {
         var journal = new Journal(Guid.NewGuid(), Guid.NewGuid(), _faker.Lorem.Word());
-        _repositoryMock.Setup(repository => repository.GetByIdAsync(journal.Id, It.IsAny<CancellationToken>())).ReturnsAsync(journal);
+        _repositoryMock.SetupGetById(journal);
 
         await FluentActions
             .Awaiting(() => _service.EnsureAccessAsync(journal.Id, Guid.NewGuid(), CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        _repositoryMock.VerifyGetByIdCalled(journal.Id);
     }
 
     [Fact]
@@ -67,9 +73,11 @@ public class JournalAccessServiceTests
     {
         var id = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        _repositoryMock.Setup(repository => repository.IsUserLinkedAsync(id, userId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _repositoryMock.SetupIsUserLinked(id, userId, true);
 
         await _service.ValidateAccessAsync(id, userId, CancellationToken.None);
+
+        _repositoryMock.VerifyIsUserLinkedCalled(id, userId);
     }
 
     [Fact]
@@ -85,11 +93,13 @@ public class JournalAccessServiceTests
     {
         var id = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        _repositoryMock.Setup(repository => repository.IsUserLinkedAsync(id, userId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        _repositoryMock.SetupIsUserLinked(id, userId, false);
 
         await FluentActions
             .Awaiting(() => _service.ValidateAccessAsync(id, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        _repositoryMock.VerifyIsUserLinkedCalled(id, userId);
     }
 }

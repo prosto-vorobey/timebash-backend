@@ -16,7 +16,7 @@ public class CategoryAccessServiceTests
 
     public CategoryAccessServiceTests()
     {
-        _repositoryMock = new();
+        _repositoryMock = new(MockBehavior.Strict);
         _service = new(_repositoryMock.Object);
     }
 
@@ -24,10 +24,12 @@ public class CategoryAccessServiceTests
     public async Task EnsureCategoryAccess_ValidAccess_ShouldReturnCategory()
     {
         var category = new Category(Guid.NewGuid(), Guid.NewGuid(), _faker.Lorem.Word(), "#000000");
-        _repositoryMock.Setup(repository => repository.GetByIdAsync(category.Id, It.IsAny<CancellationToken>())).ReturnsAsync(category);
+        SetupGetById(category.Id, category);
 
         var result = await _service.EnsureAccessAsync(category.Id, category.UserId, CancellationToken.None);
         result.Should().Be(category);
+
+        VerifyGetByIdCalled(category.Id);
     }
 
     [Fact]
@@ -42,24 +44,28 @@ public class CategoryAccessServiceTests
     public async Task EnsureCategoryAccess_NonexistentCategoryId_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        _repositoryMock.Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync((Category?)null);
+        SetupGetById(id, null);
 
         await FluentActions
             .Awaiting(() => _service.EnsureAccessAsync(id, Guid.NewGuid(), CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        VerifyGetByIdCalled(id);
     }
 
     [Fact]
     public async Task EnsureCategoryAccess_WrongUserId_ShouldThrowNotFound()
     {
         var category = new Category(Guid.NewGuid(), Guid.NewGuid(), _faker.Lorem.Word(), "#000000");
-        _repositoryMock.Setup(repository => repository.GetByIdAsync(category.Id, It.IsAny<CancellationToken>())).ReturnsAsync(category);
+        SetupGetById(category.Id, category);
 
         await FluentActions
             .Awaiting(() => _service.EnsureAccessAsync(category.Id, Guid.NewGuid(), CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        VerifyGetByIdCalled(category.Id);
     }
 
     [Fact]
@@ -67,9 +73,11 @@ public class CategoryAccessServiceTests
     {
         var id = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        _repositoryMock.Setup(repository => repository.IsUserLinkedAsync(id, userId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        SetupIsUserLinked(id, userId, true);
 
         await _service.ValidateAccessAsync(id, userId, CancellationToken.None);
+
+        VerifyIsUserLinkedCalled(id, userId);
     }
 
     [Fact]
@@ -85,11 +93,29 @@ public class CategoryAccessServiceTests
     {
         var id = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        _repositoryMock.Setup(repository => repository.IsUserLinkedAsync(id, userId, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        SetupIsUserLinked(id, userId, false);
 
         await FluentActions
             .Awaiting(() => _service.ValidateAccessAsync(id, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
+
+        VerifyIsUserLinkedCalled(id, userId);
     }
+
+    private void SetupGetById(Guid id, Category? category)
+        => _repositoryMock
+            .Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(category);
+
+    private void SetupIsUserLinked(Guid id, Guid userId, bool isLinked)
+        => _repositoryMock
+            .Setup(repository => repository.IsUserLinkedAsync(id, userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(isLinked);
+
+    private void VerifyGetByIdCalled(Guid id)
+        => _repositoryMock.Verify(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>()), Times.Once);
+
+    private void VerifyIsUserLinkedCalled(Guid id, Guid userId)
+        => _repositoryMock.Verify(repository => repository.IsUserLinkedAsync(id, userId, It.IsAny<CancellationToken>()), Times.Once);
 }

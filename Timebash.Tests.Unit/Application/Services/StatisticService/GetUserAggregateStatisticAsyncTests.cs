@@ -4,6 +4,7 @@ using Timebash.Core.DTOs.Responses;
 using Timebash.Core.Entities;
 using Timebash.Core.Exceptions;
 using Timebash.Tests.Unit.Application.Services.StatisticService.TestData;
+using Timebash.Tests.Unit.TestInfrastructure.MockExtensions.AccessServices;
 
 namespace Timebash.Tests.Unit.Application.Services.StatisticService;
 
@@ -20,13 +21,13 @@ public class GetUserAggregateStatisticAsyncTests : StatisticServiceTestsBase
         var user = new User(userId, Faker.Internet.UserName(), Faker.Internet.Email());
         var expected = new UserAggregateStatisticResponse(expectedTime, expectedStats);
 
-        SetupUserExists(user.Id);
+        UserAccessServiceMock.SetupValidateExists(user.Id);
         SetupGetActivitiesForUser(user.Id, null, null, activities);
 
         var result = await Service.GetUserAggregateStatisticAsync(user.Id, null, null, CancellationToken.None);
         
         result.Should().BeEquivalentTo(expected);
-        VerifyUserExistsCalled(user.Id);
+        UserAccessServiceMock.VerifyValidateExistsCalled(user.Id);
         VerifyGetActivitiesForUserCalled(user.Id, null, null);
     }
 
@@ -44,13 +45,13 @@ public class GetUserAggregateStatisticAsyncTests : StatisticServiceTestsBase
         );
         var expected = new UserAggregateStatisticResponse(expectedTime, expectedStats);
 
-        SetupUserExists(user.Id);
+        UserAccessServiceMock.SetupValidateExists(user.Id);
         SetupGetActivitiesForUser(user.Id, startDate, null, activities);
 
         var result = await Service.GetUserAggregateStatisticAsync(user.Id, startDate, null, CancellationToken.None);
         
         result.Should().BeEquivalentTo(expected);
-        VerifyUserExistsCalled(user.Id);
+        UserAccessServiceMock.VerifyValidateExistsCalled(user.Id);
         VerifyGetActivitiesForUserCalled(user.Id, startDate, null);
     }
 
@@ -68,13 +69,13 @@ public class GetUserAggregateStatisticAsyncTests : StatisticServiceTestsBase
         );
         var expected = new UserAggregateStatisticResponse(expectedTime, expectedStats);
 
-        SetupUserExists(user.Id);
+        UserAccessServiceMock.SetupValidateExists(user.Id);
         SetupGetActivitiesForUser(user.Id, null, endDate, activities);
 
         var result = await Service.GetUserAggregateStatisticAsync(user.Id, null, endDate, CancellationToken.None);
         
         result.Should().BeEquivalentTo(expected);
-        VerifyUserExistsCalled(user.Id);
+        UserAccessServiceMock.VerifyValidateExistsCalled(user.Id);
         VerifyGetActivitiesForUserCalled(user.Id, null, endDate);
     }
 
@@ -94,13 +95,13 @@ public class GetUserAggregateStatisticAsyncTests : StatisticServiceTestsBase
         );
         var expected = new UserAggregateStatisticResponse(expectedTime, expectedStats);
 
-        SetupUserExists(user.Id);
+        UserAccessServiceMock.SetupValidateExists(user.Id);
         SetupGetActivitiesForUser(user.Id, startDate, endDate, activities);
 
         var result = await Service.GetUserAggregateStatisticAsync(user.Id, startDate, endDate, CancellationToken.None);
         
         result.Should().BeEquivalentTo(expected);
-        VerifyUserExistsCalled(user.Id);
+        UserAccessServiceMock.VerifyValidateExistsCalled(user.Id);
         VerifyGetActivitiesForUserCalled(user.Id, startDate, endDate);
     }
 
@@ -108,54 +109,35 @@ public class GetUserAggregateStatisticAsyncTests : StatisticServiceTestsBase
     public async Task GetUserAggregateStatistic_EmptyId_ShouldThrowBadRequest()
     {
         var id = Guid.Empty;
-        UserAccessServiceMock
-            .Setup(service => service.ValidateExistsAsync(id, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new BadRequestException());
+        UserAccessServiceMock.SetupValidateExistsThrowsBadRequest(id);
 
         await FluentActions
             .Awaiting(() => Service.GetUserAggregateStatisticAsync(id, null, null, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
 
-        VerifyUserExistsCalled(id);
-        VerifyGetActivitiesForUserNotCalled();
+        UserAccessServiceMock.VerifyValidateExistsCalled(id);
     }
 
     [Fact]
     public async Task GetUserAggregateStatistic_UserNotFound_ShouldThrowNotFound()
     {
         var id = Guid.NewGuid();
-        UserAccessServiceMock
-            .Setup(service => service.ValidateExistsAsync(id, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new NotFoundException());
+        UserAccessServiceMock.SetupValidateExistsThrowsNotFound(id);
 
         await FluentActions
             .Awaiting(() => Service.GetUserAggregateStatisticAsync(id, null, null, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
 
-        VerifyUserExistsCalled(id);
-        VerifyGetActivitiesForUserNotCalled();
+        UserAccessServiceMock.VerifyValidateExistsCalled(id);
     }
-
-    private void SetupUserExists(Guid userId)
-        => UserAccessServiceMock
-            .Setup(service => service.ValidateExistsAsync(userId, It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
 
     private void SetupGetActivitiesForUser(Guid id, DateTime? startDate, DateTime? endDate, List<Activity> activities)
         => ActivityQueryServiceMock
             .Setup(service => service.GetActivitiesForUserAsync(id, startDate, endDate))
             .Returns(activities.ToAsyncEnumerable());
 
-    private void VerifyUserExistsCalled(Guid userId)
-        => UserAccessServiceMock.Verify(service => service.ValidateExistsAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
-
     private void VerifyGetActivitiesForUserCalled(Guid id, DateTime? startDate, DateTime? endDate)
         => ActivityQueryServiceMock.Verify(service => service.GetActivitiesForUserAsync(id, startDate, endDate), Times.Once);
-
-    private void VerifyGetActivitiesForUserNotCalled()
-        => ActivityQueryServiceMock.Verify(
-            service => service.GetActivitiesForUserAsync(It.IsAny<Guid>(), It.IsAny<DateTime?>(), It.IsAny<DateTime?>()),
-            Times.Never);
 }

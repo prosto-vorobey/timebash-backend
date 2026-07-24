@@ -4,6 +4,7 @@ using Timebash.Core.DTOs.Responses;
 using Timebash.Core.Entities;
 using Timebash.Core.Exceptions;
 using Timebash.Tests.Unit.Application.Services.StatisticService.TestData;
+using Timebash.Tests.Unit.TestInfrastructure.MockExtensions.AccessServices;
 
 namespace Timebash.Tests.Unit.Application.Services.StatisticService;
 
@@ -18,13 +19,13 @@ public class GetCategoryStatisticAsyncTests : StatisticServiceTestsBase
     {
         var expected = new CategoryStatisticResponse(expectedTime);
 
-        SetupCategoryAccess(category.Id, category.UserId);
+        CategoryAccessServiceMock.SetupValidateAccess(category.Id, category.UserId);
         SetupGetActivitiesForCategory(category.Id, null, null, activities);
 
         var result = await Service.GetCategoryStatisticAsync(category.Id, null, null, category.UserId, CancellationToken.None);
         
         result.Should().BeEquivalentTo(expected);
-        VerifyCategoryAccessCalled(category.Id, category.UserId);
+        CategoryAccessServiceMock.VerifyValidateAccessCalled(category.Id, category.UserId);
         VerifyGetActivitiesForCategoryCalled(category.Id, null, null);
     }
 
@@ -37,13 +38,13 @@ public class GetCategoryStatisticAsyncTests : StatisticServiceTestsBase
         var (activities, expectedTime) = CategoryStatisticScenarioBuilder.GetDataWithStartDate(category, startDate, DurationSecond);
         var expected = new CategoryStatisticResponse(expectedTime);
 
-        SetupCategoryAccess(category.Id, category.UserId);
+        CategoryAccessServiceMock.SetupValidateAccess(category.Id, category.UserId);
         SetupGetActivitiesForCategory(category.Id, startDate, null, activities);
 
         var result = await Service.GetCategoryStatisticAsync(category.Id, startDate, null, category.UserId, CancellationToken.None);
         
         result.Should().BeEquivalentTo(expected);
-        VerifyCategoryAccessCalled(category.Id, category.UserId);
+        CategoryAccessServiceMock.VerifyValidateAccessCalled(category.Id, category.UserId);
         VerifyGetActivitiesForCategoryCalled(category.Id, startDate, null);
     }
 
@@ -56,13 +57,13 @@ public class GetCategoryStatisticAsyncTests : StatisticServiceTestsBase
         var (activities, expectedTime) = CategoryStatisticScenarioBuilder.GetDataWithEndDate(category, endDate, DurationSecond);
         var expected = new CategoryStatisticResponse(expectedTime);
 
-        SetupCategoryAccess(category.Id, category.UserId);
+        CategoryAccessServiceMock.SetupValidateAccess(category.Id, category.UserId);
         SetupGetActivitiesForCategory(category.Id, null, endDate, activities);
 
         var result = await Service.GetCategoryStatisticAsync(category.Id, null, endDate, category.UserId, CancellationToken.None);
         
         result.Should().BeEquivalentTo(expected);
-        VerifyCategoryAccessCalled(category.Id, category.UserId);
+        CategoryAccessServiceMock.VerifyValidateAccessCalled(category.Id, category.UserId);
         VerifyGetActivitiesForCategoryCalled(category.Id, null, endDate);
     }
 
@@ -76,13 +77,13 @@ public class GetCategoryStatisticAsyncTests : StatisticServiceTestsBase
         var (activities, expectedTime) = CategoryStatisticScenarioBuilder.GetDataWithStartAndEndDate(category, startDate, endDate, DurationSecond);
         var expected = new CategoryStatisticResponse(expectedTime);
 
-        SetupCategoryAccess(category.Id, category.UserId);
+        CategoryAccessServiceMock.SetupValidateAccess(category.Id, category.UserId);
         SetupGetActivitiesForCategory(category.Id, startDate, endDate, activities);
 
         var result = await Service.GetCategoryStatisticAsync(category.Id, startDate, endDate, category.UserId, CancellationToken.None);
         
         result.Should().BeEquivalentTo(expected);
-        VerifyCategoryAccessCalled(category.Id, category.UserId);
+        CategoryAccessServiceMock.VerifyValidateAccessCalled(category.Id, category.UserId);
         VerifyGetActivitiesForCategoryCalled(category.Id, startDate, endDate);
     }
 
@@ -92,17 +93,14 @@ public class GetCategoryStatisticAsyncTests : StatisticServiceTestsBase
         var id = Guid.Empty;
         var userId = Guid.NewGuid();
 
-        CategoryAccessServiceMock
-            .Setup(service => service.ValidateAccessAsync(id, userId, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new BadRequestException());
+        CategoryAccessServiceMock.SetupValidateAccessThrowsBadRequest(id, userId);
 
         await FluentActions
             .Awaiting(() => Service.GetCategoryStatisticAsync(id, null, null, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<BadRequestException>();
 
-        VerifyCategoryAccessCalled(id, userId);
-        VerifyGetActivitiesForCategoryNotCalled();
+        CategoryAccessServiceMock.VerifyValidateAccessCalled(id, userId);
     }
 
     [Fact]
@@ -111,37 +109,21 @@ public class GetCategoryStatisticAsyncTests : StatisticServiceTestsBase
         var id = Guid.NewGuid();
         var userId = Guid.NewGuid();
 
-        CategoryAccessServiceMock
-            .Setup(service => service.ValidateAccessAsync(id, userId, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new NotFoundException());
+        CategoryAccessServiceMock.SetupValidateAccessThrowsNotFound(id, userId);
 
         await FluentActions
             .Awaiting(() => Service.GetCategoryStatisticAsync(id, null, null, userId, CancellationToken.None))
             .Should()
             .ThrowAsync<NotFoundException>();
 
-        VerifyCategoryAccessCalled(id, userId);
-        VerifyGetActivitiesForCategoryNotCalled();
+        CategoryAccessServiceMock.VerifyValidateAccessCalled(id, userId);
     }
-
-    private void SetupCategoryAccess(Guid id, Guid userId)
-        => CategoryAccessServiceMock
-            .Setup(service => service.ValidateAccessAsync(id, userId, It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
 
     private void SetupGetActivitiesForCategory(Guid id, DateTime? startDate, DateTime? endDate, List<Activity> activities)
         => ActivityQueryServiceMock
             .Setup(service => service.GetActivitiesForCategoryAsync(id, startDate, endDate))
             .Returns(activities.ToAsyncEnumerable());
 
-    private void VerifyCategoryAccessCalled(Guid id, Guid userId)
-        => CategoryAccessServiceMock.Verify(service => service.ValidateAccessAsync(id, userId, It.IsAny<CancellationToken>()), Times.Once);
-
     private void VerifyGetActivitiesForCategoryCalled(Guid id, DateTime? startDate, DateTime? endDate)
         => ActivityQueryServiceMock.Verify(service => service.GetActivitiesForCategoryAsync(id, startDate, endDate), Times.Once);
-
-    private void VerifyGetActivitiesForCategoryNotCalled()
-        => ActivityQueryServiceMock.Verify(
-            service => service.GetActivitiesForCategoryAsync(It.IsAny<Guid>(), It.IsAny<DateTime?>(), It.IsAny<DateTime?>()),
-            Times.Never);
 }

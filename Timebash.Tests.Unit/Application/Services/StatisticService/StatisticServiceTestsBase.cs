@@ -10,10 +10,10 @@ public abstract class StatisticServiceTestsBase
 {
     public StatisticServiceTestsBase()
     {
-        UserAccessServiceMock = new();
-        JournalAccessServiceMock = new();
-        CategoryAccessServiceMock = new();
-        ActivityQueryServiceMock = new();
+        UserAccessServiceMock = new(MockBehavior.Strict);
+        JournalAccessServiceMock = new(MockBehavior.Strict);
+        CategoryAccessServiceMock = new(MockBehavior.Strict);
+        ActivityQueryServiceMock = new(MockBehavior.Strict);
 
         Service = new(
             UserAccessServiceMock.Object,
